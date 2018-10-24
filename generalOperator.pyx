@@ -38,7 +38,225 @@ ctypedef enum operation:
     MAT_ELS
     ACT
 
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+# recursive functions for preparing the necessary matrices (M_onsite[i] and
+# hopfunc[j]) for a given set of sites, looping over all connected sites and
+# initiate the sum over the orbitals
+cdef void sitesums_recfunc(complex* out_data,
+                           # complex[:] out_data,
+                           int* idata, int iSite,
+                            int depth, int ket_start, int bra_start,
+                            int* auxwhere_list,
+                            int* wherepos_neigh,
+                            int* auxpos_list,
+                            # int [:] auxwhere_list,
+                            # int [:] wherepos_neigh,
+                            # int [:,:] auxpos_list,
+                            int* x_norbs,
+                            complex** hopfunc, complex** M_onsite,
+                            complex** hopfunc_blocks, complex** M_onsite_blocks,
+                            complex ** M_onsite_lastblock,
+                            # BlockSparseMatrix2[:] M_onsite_blocks,
+                            # BlockSparseMatrix2[:] hopfunc_blocks,
+                            int * hopfunc_block_shapes,
+                            int * ket_start_positions,
+                            int withRevTerm, complex const_fac, int N_SiteSums,
+                            int* unique_onsite,
+                            complex* bra, complex* ket
+                            # complex[:] bra, complex[:] ket
+                           ):
+    cdef int iNextSite, o1_a, nextSiteOffset
+    cdef int num_neighbors, startindex_neighbors, auxpos_list_index
+    cdef complex sumtmp
+    cdef complex orbprod0, orbprod1
+
+    #recursion end: get last M_onsite and initiate sum over all orbitals
+    if depth == (N_SiteSums - 1) or N_SiteSums == 1:
+        # fill the last onsite matrix
+        if (not unique_onsite[depth]) and N_SiteSums != 1:
+            M_onsite[depth] = M_onsite_lastblock[iSite]
+
+        # sum over all orbitals for the given set of sites
+        sumtmp = 0
+        for o1_a in range(x_norbs[0]):
+            orbprod0 = bra[bra_start + o1_a].conjugate()
+            if withRevTerm != 0:
+                orbprod1 = ket[bra_start + o1_a]
+            else:
+                orbprod1 = 0j
+            # calculate sum over all orbitals
+            sumtmp = orbsums_recfunc(sumtmp,
+                                     orbprod0, orbprod1, 0,
+                                     bra_start, ket_start, o1_a,
+                                     withRevTerm,
+                                     x_norbs,
+                                     N_SiteSums,
+                                     M_onsite, hopfunc,
+                                     bra, ket
+                                     )
+        out_data[idata[0]] = const_fac * sumtmp
+        idata[0] = idata[0] + 1
+
+    #recursion step:
+    #           loop over all 'x'-Sites, get the needed M_x, O_xy and x_norbs,
+    #           and call next recursion step
+    else:
+        assert depth < (N_SiteSums - 1)
+
+        # find all connected sites with the help of the auxlists and loop over them
+        auxpos_list_index = auxwhere_list[depth-1] + iSite
+        startindex_neighbors = auxpos_list[auxpos_list_index]
+        num_neighbors = auxpos_list[auxpos_list_index+1] - startindex_neighbors
+        for i in range(num_neighbors):
+            iNextSite = wherepos_neigh[startindex_neighbors + i]
+            nextSiteOffset = auxwhere_list[depth]
+            if not unique_onsite[depth]:
+                M_onsite[depth] = M_onsite_blocks[nextSiteOffset + iNextSite]
+
+            hopfunc[depth] = hopfunc_blocks[nextSiteOffset + iNextSite]
+            x_norbs[depth+1] = hopfunc_block_shapes[nextSiteOffset + iNextSite]
+
+            # special case for the forelast loop: get index ket_start
+            if depth == (N_SiteSums - 2):
+                ket_start = ket_start_positions[iNextSite]
+            # recursive call
+            sitesums_recfunc(out_data,
+                             idata, iNextSite,
+                             depth+1,
+                             ket_start, bra_start,
+                             auxwhere_list,
+                             wherepos_neigh,
+                             auxpos_list,
+                             x_norbs,
+                             hopfunc, M_onsite,
+                             hopfunc_blocks, M_onsite_blocks, M_onsite_lastblock,
+                             hopfunc_block_shapes,                             ket_start_positions,
+                             withRevTerm, const_fac,
+                             N_SiteSums, unique_onsite,
+                             bra, ket
+                            )
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+# calculate the sum over all orbitals for a given set of sites
+cdef complex orbsums_recfunc(complex sum, complex orbprod0, complex orbprod1,
+                             int orbdepth, int bra_start, int ket_start,
+                             int o1_x, int withRevTerm, int* x_norbs,
+                             int N_SiteSums, complex** M_onsite, complex** hopfunc,
+                             complex* bra, complex* ket
+                             ):
+
+    cdef int norbs, norbs_next, o1_y, o2_x,
+    norbs = x_norbs[orbdepth]
+    cdef int neworbdepth = orbdepth + 1
+    cdef complex orbprod_tmp0, orbprod_tmp1
+    cdef complex sumtmp = sum
+
+    # recursion: multiply M_x*O_xy*orbproduct(sofar), call next step
+    if orbdepth < (N_SiteSums - 1):
+        norbs_next = x_norbs[orbdepth+1]
+        for o2_x in range(norbs):
+            for o1_y in range(norbs_next):
+                orbprod_tmp0 = M_onsite[orbdepth][o1_x*norbs+o2_x] \
+                               * hopfunc[orbdepth][o2_x*norbs_next+o1_y]
+                orbprod_tmp0 *= orbprod0
+                # in case the complex conjugate is to be calculated
+                if withRevTerm != 0:
+                    orbprod_tmp1 = hopfunc[orbdepth][o2_x*norbs_next
+                                   + o1_y].conjugate() \
+                                   * M_onsite[orbdepth][o2_x*norbs+o1_x]
+                    orbprod_tmp1 *= orbprod1
+                # call next step
+                sumtmp = orbsums_recfunc(sumtmp, orbprod_tmp0, orbprod_tmp1,
+                                         neworbdepth, bra_start, ket_start,
+                                         o1_y, withRevTerm,
+                                         x_norbs,
+                                         N_SiteSums, M_onsite, hopfunc,
+                                         bra, ket
+                                         )
+
+    # recursion end: orbprod(sofar).M_z.ket_z; and sum over the products
+    else:
+        for o2_x in range(norbs):
+            orbprod_tmp0 = M_onsite[orbdepth][o1_x*norbs+o2_x] \
+                              * ket[ket_start+o2_x]
+            orbprod_tmp0 *= orbprod0
+
+            sumtmp += orbprod_tmp0
+
+            if withRevTerm != 0:
+                orbprod_tmp1 = bra[ket_start+o2_x].conjugate() \
+                                   * M_onsite[orbdepth][o2_x*norbs+o1_x]
+                orbprod_tmp1 *= orbprod1
+                sumtmp += withRevTerm * orbprod_tmp1
+
+    return sumtmp
+
+
+
+
+
+
+def _where_to_dict_where(syst, wherelist):
+    """
+    THIS FUNCTION IS PROBABLY NOT NEEDED IN FUTURE! BUT IT IS GOOD TO SHOW THE MECHANISM.
+    'wherelist' is of the structure [[(a,b),...],[(b,c),...],...,[(x,y),...]],
+    with a,b,..,y being Sites of the finalized builder (ie. of type int) or
+    unfinalized builder (ie. instance of kwant.builder.Site).
+    returns the list of dictionaries, who tell where to find the corresponding
+    hoppings of the next site in 'wherelist'.
+    """
+
+    assert(len(wherelist[0][0]) == 2)
+    dict_list = []
+    # loop to generate the where_index dicts
+    for i in range(len(wherelist)-1):
+        dict_list.append({})
+        for index, hop in enumerate(wherelist[i+1]):
+            # if sites are kwant.builder.Site objects
+            if isinstance(hop[0], kwant.builder.Site):
+                site_int = syst.id_by_site[hop[0]]
+            else:
+                site_int = hop[0]
+            # else:
+            #     raise ValueError('Either list of where is of wrong shape or given Sites are neither of type int nor instances of kwant.builder.Site')
+            if site_int in dict_list[i].keys():
+                dict_list[i][site_int].append(index)
+            else:
+                dict_list[i][site_int] = [index]
+
+    return dict_list
+
+
+
+
 def _dictwhere_to_auxlists(wherelist, auxwhere_list, dict_list):
+    """
+    To be changed later. Can be created directly from initial wherelist
+    Auxiliary function to create auxiliary 1d-lists lists from wherelist and dict_list,
+    which contain the same information as the dict_list.
+
+    Parameters:
+    - dict_list: list of dictionary whose keys are the Sites of one operator and
+                 its data is a list of all the neighbors (their position in the
+                 wherelist) of that "key"-Site for the next hopping operator
+    - wherelist: list of hoppings of the form:
+                    [ [ (a1,b1),...a-b-hoppings], [(),...b-c-hoppings],....]
+    - auxwhere_list: list which tells the starting positions of e.g. b-c-hoppings
+                     in the flattened wherelist.
+
+    Returns:
+    - wherepos: main data from dict_list, i.e. the position in wherelist of all
+                the neighbors for a given site
+    - auxpos_list: auxiliary list to help find the correct entries in wherepos.
+                   It has the same structure as the flattened where list.
+                   It yieds the starting positions in wherepos for the correspon-
+                   ding hopping in wherelist.
+    """
     auxpos_list = []
     wherepos = []
     new_pos = 0
@@ -56,11 +274,13 @@ def _dictwhere_to_auxlists(wherelist, auxwhere_list, dict_list):
                 auxpos_list.append(auxpos_list[index])
                 # no change to new_pos, since wherepos was not extended
             else: # site not yet searched for 'neighbors'
-                  #in next hopping-level
+                  # in next hopping-level
                 usedSites.append(hop[1])
                 neighlist = dict_list[i][hop[1]]
+                # append list of neighbors to wherepos
                 wherepos.extend(neighlist)
                 num_neigh = len(neighlist)
+                # append starting position in wherepos to auxpos_list
                 auxpos_list.append(new_pos)
                 new_pos += num_neigh
     #append len of wherepos to auxpos_list as last element
@@ -69,241 +289,16 @@ def _dictwhere_to_auxlists(wherelist, auxwhere_list, dict_list):
     return np.asarray(wherepos, dtype=gint_dtype), np.asarray(auxpos_list, dtype=gint_dtype)
 
 
-# recursive functions for preparing the necessary matrices
-# for a given set of sites and initiate the sum over the orbitals
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cdef void sitesums_recfunc(complex* out_data,
-                           # complex[:] out_data,
-                           int* idata, int iSite,
-                            int depth, int ket_start, int bra_start,
-                            int* auxwhere_list,
-                            int* wherepos_neigh,
-                            int* auxpos_list,
-                            # int [:] auxwhere_list,
-                            # int [:] wherepos_neigh,
-                            # int [:,:] auxpos_list,
-                            int* x_norbs,
-                            complex** M_onsite, complex** hopfunc,
-                            BlockSparseMatrix2[:] M_onsite_blocks, BlockSparseMatrix2[:] hopfunc_blocks,
-                            int withRevTerm, complex const_fac, int N_SiteSums,
-                            int* unique_onsite,
-                            complex* bra, complex* ket
-                            # complex[:] bra, complex[:] ket
-                           ):
-    cdef BlockSparseMatrix2 dummyhop_mat
-    cdef BlockSparseMatrix2 dummyonsite_mat
-    cdef int iNextSite, o1_a
-    cdef int num_neighbors, startindex_neighbors, auxpos_list_index
-    cdef complex sumtmp
-    cdef complex orbprod0, orbprod1
-
-    #recursion end: get last M_onsite and initiate sum over all orbitals
-    if depth == (N_SiteSums - 1) or N_SiteSums == 1:
-        # print('sitesums_recend')
-        # fill the last onsite matrix
-        if (not unique_onsite[depth]) and N_SiteSums != 1:
-            dummyonsite_mat = M_onsite_blocks[depth]
-            M_onsite[depth] = dummyonsite_mat.get(iSite)
-
-        # sum over all orbitals for the given set of sites
-        sumtmp = 0
-        for o1_a in range(x_norbs[0]):
-            orbprod0 = bra[bra_start + o1_a].conjugate()
-            if withRevTerm != 0:
-                orbprod1 = ket[bra_start + o1_a]
-            else:
-                orbprod1 = 0j
-            sumtmp = orbsums_recfunc(sumtmp,
-                                     orbprod0, orbprod1, 0,
-                                     bra_start, ket_start, o1_a,
-                                     withRevTerm,
-                                     x_norbs,
-                                     N_SiteSums,
-                                     M_onsite, hopfunc,
-                                     bra, ket
-                                     )
-        out_data[idata[0]] = const_fac * sumtmp
-        idata[0] = idata[0] + 1
-        # print('sitesums_recend_finished')
-
-    #recursion: loop over all 'x'-Sites,
-    #           get the needed M_x, O_xy and x_norbs,
-    #           and call next recursion step
-    else:
-        assert depth < (N_SiteSums - 1)
-
-        auxpos_list_index = auxwhere_list[depth-1] + iSite
-        startindex_neighbors = auxpos_list[auxpos_list_index]
-        num_neighbors = auxpos_list[auxpos_list_index+1] - startindex_neighbors
-        for i in range(num_neighbors):
-            iNextSite = wherepos_neigh[startindex_neighbors + i]
-            if not unique_onsite[depth]:
-                dummyonsite_mat = M_onsite_blocks[depth]
-                M_onsite[depth] = dummyonsite_mat.get(iNextSite)
-
-            dummyhop_mat = hopfunc_blocks[depth]
-            hopfunc[depth] = dummyhop_mat.get(iNextSite)
-            x_norbs[depth+1] = dummyhop_mat.block_shapes[iNextSite, 1]
-
-            # special case for the forelast loop: get index ket_start
-            if depth == (N_SiteSums - 2):
-                ket_start = dummyhop_mat.block_offsets[iNextSite, 1]
-
-            sitesums_recfunc(out_data,
-                             idata, iNextSite,
-                             depth+1,
-                             ket_start, bra_start,
-                             auxwhere_list,
-                             wherepos_neigh,
-                             auxpos_list,
-                             x_norbs,
-                             M_onsite, hopfunc,
-                             M_onsite_blocks, hopfunc_blocks,
-                             withRevTerm, const_fac,
-                             N_SiteSums, unique_onsite,
-                             bra, ket
-                            )
-
-
-# calculate the sum over all orbitals for a given set of sites
-@cython.boundscheck(False)
-@cython.wraparound(False)
-cdef complex orbsums_recfunc(complex sum, complex orbprod0, complex orbprod1,
-                             int orbdepth, int bra_start, int ket_start,
-                             int o1_x, int withRevTerm, int* x_norbs,
-                             int N_SiteSums, complex** M_onsite, complex** hopfunc,
-                             complex* bra, complex* ket
-                             #complex[:] bra, complex[:] ket
-                             ):
-    # print('orbsums_recfunc Aufruf')
-    # assert(type(orbdepth) == int)
-    # assert(type(o1_x) == int)
-    # assert(type(bra_start) == int)
-    # assert(type(ket_start) == int)
-
-    cdef int norbs, norbs_next, o1_y, o2_x,
-    norbs = x_norbs[orbdepth]
-    cdef int neworbdepth = orbdepth + 1
-    cdef complex orbprod_tmp0, orbprod_tmp1
-    cdef complex sumtmp = sum
-    # recursion: multiply M_x*O_xy*orbproduct(sofar), call next step
-    if orbdepth < (N_SiteSums - 1):
-        # print('rec step')
-        # pass
-        norbs_next = x_norbs[orbdepth+1]
-        for o2_x in range(norbs):
-            for o1_y in range(norbs_next):
-                orbprod_tmp0 = M_onsite[orbdepth][o1_x*norbs+o2_x] \
-                               * hopfunc[orbdepth][o2_x*norbs_next+o1_y]
-                orbprod_tmp0 *= orbprod0
-
-                if withRevTerm != 0:
-                    orbprod_tmp1 = hopfunc[orbdepth][o2_x*norbs_next
-                                   + o1_y].conjugate() \
-                                   * M_onsite[orbdepth][o2_x*norbs+o1_x]
-                    orbprod_tmp1 *= orbprod1
-                # next step
-                sumtmp = orbsums_recfunc(sumtmp, orbprod_tmp0, orbprod_tmp1,
-                                         neworbdepth, bra_start, ket_start,
-                                         o1_y, withRevTerm,
-                                         x_norbs,
-                                         N_SiteSums, M_onsite, hopfunc,
-                                         bra, ket
-                                         )
-
-    # recursion end: orbprod(sofar).M_z.ket_z; and sum over the products
-    else:
-        # print('orbsums_recend')
-        # assert(orbdepth == (N_SiteSums - 1))
-        for o2_x in range(norbs):
-            orbprod_tmp0 = M_onsite[orbdepth][o1_x*norbs+o2_x] \
-                              * ket[ket_start+o2_x]
-            orbprod_tmp0 *= orbprod0
-
-            sumtmp += orbprod_tmp0
-
-            if withRevTerm != 0:
-                orbprod_tmp1 = bra[ket_start+o2_x].conjugate() \
-                                   * M_onsite[orbdepth][o2_x*norbs+o1_x]
-                orbprod_tmp1 *= orbprod1
-                sumtmp += withRevTerm * orbprod_tmp1
-        # print('orbsums_recend_finished')
-
-    return sumtmp
-
-
-
-
-
-
-
-
-def _where_to_dict_where(syst, wherelist):
-    """
-    'wherelist' is of the structure [[(a,b),...],[(b,c),...],...,[(x,y),...]],
-    with a,b,..,y being Sites of the finalized builder (ie. of type int) or
-    unfinalized builder (ie. instance of kwant.builder.Site).
-    returns the list of dictionaries, who tell where to find the corresponding
-    hoppings of the next site in 'wherelist'.
-    """
-    # a_list = [i for i in range(len(wherelist[0]))]
-    dict_list = []  # [a_list]
-    # if type(wherelist[0][0]) == int or isinstance(wherelist[0][0], kwant.builder.Site):
-    #     return dict_list
-    # else:
-    assert(len(wherelist[0][0]) == 2)
-    # loop to generate the where_index dicts
-    for i in range(len(wherelist)-1):
-        dict_list.append({})
-        for index, hop in enumerate(wherelist[i+1]):
-            if isinstance(hop[0], kwant.builder.Site): # if sites are kwant.builder.Site objects
-                site_int = syst.id_by_site[hop[0]]
-            # elif type(hop[0]) == int:
-            else:
-                site_int = hop[0]
-            # else:
-            #     raise ValueError('Either list of where is of wrong shape or given Sites are neither of type int nor instances of kwant.builder.Site')
-            if site_int in dict_list[i].keys():
-                dict_list[i][site_int].append(index)
-            else:
-                dict_list[i][site_int] = [index]
-    # # create the last dictionary for the rightmost onsite-terms <- not needed anymore
-    # i = len(wherelist)-2
-    # dict_list.append({})
-    # for index, hop in enumerate(wherelist[i+1]):
-    #     if isinstance(hop[1], kwant.builder.Site): # if sites are kwant.builder.Site objects
-    #         site_int = syst.id_by_site[hop[0]]
-    #     # elif type(hop[1]) == int:
-    #     else:
-    #         site_int = hop[0]
-    #     # else:
-    #     #     raise ValueError('Either list of where is of wrong shape or given Sites are neither of type int nor instances of kwant.builder.Site')
-    #     if site_int in dict_list[i+1].keys():
-    #         dict_list[i+1][site_int].append(index)
-    #     else:
-    #         dict_list[i+1][site_int] = [index]
-
-
-    # for better efficiency, create array from dict
-    # posarray = wherelist[:-1]
-    # # posarray = [None] * (len(wherelist)-1)
-    #
-    # for i, xyhops in enumerate(wherelist[:-1]):
-    #     # posarray[i] = []
-    #     for j,hop in enumerate(xyhops):
-    #         site_int = syst.id_by_site[hop[1]]
-    #         posarray[i][j] = np.asarray(dict_list[i][site_int], dtype=gint_dtype)
-
-    return dict_list
-
-
 
 
 
 
 def _create_where_list_from_added_sites(fsyst, intracell_sites, intercell_sites):
-    r"""Creates where list from the sitelists 'intracell_sites' and 'intercell_sites' for (lead) energy current calculation.
+    r"""
+    THIS IS AN AUXILIARY FUNCTION ONLY NEEDED FOR THE CASE OF THE HEAT CURRENT IN
+    A LEAD, WHICH IS WHY IT SHOULD PROBABLY NOT BE IN THE GENERAL OPERATOR MODULE!
+
+    Creates where list from the sitelists 'intracell_sites' and 'intercell_sites' for (lead) energy current calculation.
 
     Parameters
     ----------
@@ -362,6 +357,9 @@ def _create_where_list_from_added_sites(fsyst, intracell_sites, intercell_sites)
 
 def _create_list_of_certain_neighbors(fsyst, initial_list, forbidden_list):
     r"""
+    THIS IS AN AUXILIARY FUNCTION ONLY NEEDED FOR THE CASE OF THE HEAT CURRENT IN
+    A LEAD, WHICH IS WHY IT SHOULD PROBABLY NOT BE IN THE GENERAL OPERATOR MODULE!
+
     Creates a list of sites, which are neighbors (connected in the Hamiltonian)
     of the sites in 'initial_list' but which are neither in 'forbidden_list' nor
     in 'initial_list'.
@@ -413,9 +411,12 @@ def _create_list_of_certain_neighbors(fsyst, initial_list, forbidden_list):
 
 def _create_sitechains_output(where, auxwhere_list, auxpos_list, wherepos_neigh, N_depth):
     """
-    Gives back a list, which has the same sructure as the genOp output_data.
-    This list tells you, which site-combination was used to create the corres-
-    poding output_data
+    Gives back a list, which has the same structure as the generalOperator
+    output_data.
+    This list tells, which site-combination was used to create the correspoding
+    output_data.
+    The structure of this function is very similar to sitesums_recfunc with the
+    difference that here, only the site-chains are stored.
     """
     #recursive function to get all combinations of sites of the sums
     def sitechains_recfunc(sitechain_data, sitechain_aux, int iSite, int depth):
@@ -425,7 +426,7 @@ def _create_sitechains_output(where, auxwhere_list, auxpos_list, wherepos_neigh,
         #recursion end: copy sitechain_aux to sitechain_data
         if depth == (N_depth - 1):
             sitechain_data.append(sitechain_aux[:]) #sliced for copy, avoid reference
-        #recursion: call the next step
+        #recursion step: find neighbor and call the next step
         else:
             assert depth < (N_depth - 1)
             auxpos_list_index = auxwhere_list[depth-1] + iSite
@@ -436,22 +437,29 @@ def _create_sitechains_output(where, auxwhere_list, auxpos_list, wherepos_neigh,
                 sitechains_recfunc(sitechain_data, sitechain_aux, iNextSite, depth+1)
         # end recursive function
 
-
     sitechain_data = []
     sitechain_aux = [None] * N_depth
-    # sum over all 'a'-Sites and initialize first step (for 'b'-Sites)
+    # loop over all 'a'-Sites and initialize first step (for 'b'-Sites)
     for ia in range(len(where[0])):
         sitechain_aux[0] = where[0][ia][0]
         if N_depth > 1:
+            # call recursive function
             sitechains_recfunc(sitechain_data, sitechain_aux, ia, 1)
 
     return np.asarray(sitechain_data)
 
 
+
+
+
+
 cdef class generalOperator:
     r"""
     KOMMENTARE MUESSEN NOCH ANGEPASST WERDEN!!
-    An operator for calculating general currents with arbitrary hopping.
+    An operator for calculating the product of an arbitrary amount of operators
+    of the form:
+     :math:`M_a O_{ab} M_b O_{bc} M_c` ...
+    where M_x are onsite operators and O_bc are hopping operators.
 
     An instance of this class can be called like a function to evaluate the
     expectation value with a wavefunction. See
@@ -460,37 +468,72 @@ cdef class generalOperator:
     Parameters
     ----------
     syst : `~kwant.system.System`
-    onsite : scalar or square matrix or dict or callable
-        The onsite matrix that defines the density from which this current is
-        derived. If a dict is given, it maps from site families to square
+    onsite_list: list of scalars and/or square matrices and/or dicts and/or callables
+        The onsite matrices that define the matrices  :math:`M_a` from above.
+        If dicts are given, it maps from site families to square
         matrices (scalars are allowed if the site family has 1 orbital per
         site). If a function is given it must take the same arguments as the
         onsite Hamiltonian functions of the system.
-    arbit_hop_func: tbd
-    where : sequence of pairs of `int` or `~kwant.builder.Site`, or callable, optional
-        Where to evaluate the operator. If ``syst`` is not a finalized Builder,
-        then this should be a sequence of pairs of integers. If a function is
-        provided, it should take a pair of integers or a pair of
-        `~kwant.builder.Site` (if ``syst`` is a finalized builder) and return
-        True or False.  If not provided, the operator will be calculated over
-        all hoppings in the system.
-    check_hermiticity : bool
-        Check whether the provided ``onsite`` is Hermitian. If it
+    hopOp_list: list of callables
+        The hopping matrices that define the matrices  :math:`O_{xy}` from above.
+    inwhere_list: Where to evaluate the given operators. It has the form
+        [[(a,b),...],[(b,c),...],...,[(x,y),...]], where the first list tells the
+        hoppings where :math:`O_{ab}` is to be evaluated and the other list tell
+        correspondingly where to evaluate the other hopping operators. The
+        onsite matrices are evaluated for all needed sites of the given level.
+    Optional
+    where_pos_idx: A list of dicts to find the next hopping of a given site, e.g.
+        for the first hopping (a1,b1), we have to find all hoppings in the next
+        level which are related to the same b-Site: (b1, cn), (b1, cm),...
+        For that purpose, where_pos_idx is a list of dicts, which have as keys
+        the site-ID of the linking site and as data a list of positions, where to
+        find the according hoppings in the next level of where_list.
+        Example:
+            where_pos_idx =
+                [{b1:[pos where b1-c-hops are in inwhere_list[2]], b2: [list for b2], ...},
+                 {c1: [pos of c1-d-hops]}, c2: [...], ...}, {...}, ... ]
+        With this list of dicts, it is easy to find the connected sites of a
+        given Site: where_pos_idx[level][Site]
+        By default, this list of dicts is obtained from the wherelist with all
+        possible connections.
+        Note that due to efficiency reasons, the information contained in
+        where_pos_idx is stored in two 1d arrays. In future, this dict might not
+        be needed at all.
+    withRevTerm: denotes if the complex conjugate is to be calculated (~reverting
+        the order of the operators). It should be either +1, 0 or -1, where the
+        sign denotes if the complex conjugate is added or substracted.
+    const_fac: a constant factor which is multiplied to the result of the operator
+    check_hermiticity : bool, default: False
+        Check whether each single operator is Hermitian. If it
         is not Hermitian, then an error will be raised when the
         operator is evaluated.
     sum : bool, default: False
         If True, then calling this operator will return a single scalar,
-        otherwise a vector will be returned (see
-        `~kwant.operator.Current.__call__` for details).
+        otherwise a vector will be returned for each site combination.
 
     Notes
     -----
-    Mostly needed for explicite time-dependendence of hoppings for heat current in a lead:
-    :math:`\psi_j^\dagger  \partial H_{ij} /\partial t \psi_i
+    The calculation is similar to the kwant.operators, with the difference that
+    lists of some objects are needed. The arbitrary amount of operators is handled
+    by recursive functions, e.g. to calculate the sum over the orbitalsself.
+
+    Implementation Notes
+    --------------------
+    For efficiency reasons, the recursive functions have to be cdef-functions.
+    For some reasons, the passed lists are most efficient if they are c-arrays
+    (MemViews slow down the calculation by a factor of ~3 compared to c-arrays).
+
+    The structure of the code is atm "grown" historically, i.e. from python objects
+    to MemViews, to c-arrays, which is why there are still some redundant steps,
+    e.g. creating first MemViews which are later copied to c-arrays, or the
+    creation of the dict to find connected sites.
+
+    Unfortunately, variable names do not follow a strict convention. Some of the
+    names are not precise or even misleading. (To be fixed.)
     """
 
     ### TODO: For which of those objects does it make sense to be "global"?
-    cdef public int check_hermiticity, sum, N_SiteSums, withRevTerm, out_data_length
+    cdef public int check_hermiticity, sum, N_SiteSums, withRevTerm, out_data_length, numhops
     cdef public complex const_fac
     cdef public object syst, onsite, _onsite_params_info
     cdef public object hopOperator # wherepos_dicts,
@@ -510,7 +553,6 @@ cdef class generalOperator:
     @cython.embedsignature
     def __init__(self, syst, onsite_list, hopOp_list, in_wherelist, where_pos_idx= None,
                  withRevTerm=0, const_fac=1, *, check_hermiticity=False, sum=False):
-        # self.numbercalls = 0
         assert len(onsite_list) == len(hopOp_list)+1
         if len(onsite_list) > 1:
             assert len(onsite_list) == len(in_wherelist)+1
@@ -527,13 +569,8 @@ cdef class generalOperator:
         # get hopping-lists in needed format
         # self.wherelist = np.empty_like(in_wherelist)
         _wherelist = in_wherelist[:]
-        cdef int numhops = 0
+        self.numhops = 0
         cdef int index=0
-        # if self.N_SiteSums > 2:
-        #     for i in range(len(in_wherelist)):
-        #         numhops += len(in_wherelist[i])
-        # else:
-        #     numhops =
 
         if self.N_SiteSums == 1:  # special case of "Density" (ie. bra.M.ket)
             try:
@@ -542,56 +579,35 @@ cdef class generalOperator:
             except:
                 pass
             _wherelist_dummy = kwant.operator._normalize_site_where(syst, in_wherelist[0])
-
-            # print('_wherelist_dummy',_wherelist_dummy)
-            # print('_wherelist_dummy[0] = ',_wherelist_dummy[0])
-            numhops += len(_wherelist_dummy)
-            #create fakehops from sites
-            auxnd = np.zeros((2, numhops), dtype=gint_dtype)
-            # print('len(auxnd[0]) = ',len(auxnd[0]))
-            # print('len(_wherelist_dummy) = ',len(_wherelist_dummy))
-            for i in range(numhops):
+            self.numhops += len(_wherelist_dummy)
+            #create fakehops from sites -- This seems to be done more complicated than needed
+            auxnd = np.zeros((2, self.numhops), dtype=gint_dtype)
+            for i in range(self.numhops):
                 auxnd[0][i] = _wherelist_dummy[i]
             _wherelist = auxnd.T
-            # print('_wherelist = ',_wherelist)
 
-            auxnd2 = np.zeros((numhops,2), dtype=gint_dtype)
-            auxnd2 = np.reshape(_wherelist,(numhops,2))
+            auxnd2 = np.zeros((self.numhops,2), dtype=gint_dtype)
+            auxnd2 = np.reshape(_wherelist,(self.numhops,2))
             self.wherelist = auxnd2
-            # print('self.wherelist = ', self.wherelist)
-            # for j in self.wherelist:
-            #     print(j[0])
-                # for k in j:
-                #     print(k)
-            # for i in _wherelist
-            # where_pos_idx = [[i for i in range(len(_wherelist[0]))]]
 
         # all other cases except "Density": hoppings are given instead of sites
-        for i in range(self.N_SiteSums - 1):
-            try:  # maybe _wherelist[0]==None, in which case an Error occurs
-                if type(_wherelist[0][0]) == int:  # _normalize... does not accept ints
-                    _wherelist[i] = [(syst.sites[hop[0]], syst.sites[hop[1]]) for hop in _wherelist[i]]
-            except:
-                pass
-            _wherelist[i] = kwant.operator._normalize_hopping_where(syst, in_wherelist[i])
-
-
-            for i in range(len(_wherelist)):
-                numhops += len(_wherelist[i])
-            self.wherelist = np.zeros((numhops,2), dtype=gint_dtype)
-
-            for i in range(len(_wherelist)):
+        else:
+            for i in range(self.N_SiteSums - 1):
+                try:  # maybe _wherelist[0]==None, in which case an Error occurs
+                    if type(_wherelist[0][0]) == int:  # _normalize... does not accept ints
+                        _wherelist[i] = [(syst.sites[hop[0]], syst.sites[hop[1]]) for hop in _wherelist[i]]
+                except:
+                    pass
+                _wherelist[i] = kwant.operator._normalize_hopping_where(syst, in_wherelist[i])
+                # find total number of hoppings
+                self.numhops += len(_wherelist[i])
+            # create flattened wherelist ("1d"list of hoppings) from _wherelist
+            self.wherelist = np.zeros((self.numhops,2), dtype=gint_dtype)
+            for i in range(self.N_SiteSums - 1):
                 for k in range(len(_wherelist[i])):
                     for j in range(2):
                         self.wherelist[index][j] = np.int32(_wherelist[i][k][j])
                     index += 1
-
-            # self.wherelist = np.zeros((numhops,2), dtype=gint_dtype)
-            # for i in range(numhops):
-            #     for j in range(2):
-            #           self.wherelist[i,j] = int(_wherelist[i,j])
-            # self.wherelist = np.reshape(_wherelist,(numhops,2))
-            # print('self.wherelist',self.wherelist)
 
         # create dictionary to find needed hoppings or use predefined one
         if self.N_SiteSums > 2:
@@ -600,46 +616,49 @@ cdef class generalOperator:
             # get dictionary for "connected hoppings" if not yet defined
             else:
                 dict_list = _where_to_dict_where(syst, in_wherelist)
-            # for calculation reasons, store the data of the dictionary in a
-            # 1d array and use two auxiliary lists for bookkeeping
+            # for calculation reasons, store the data of the dict_list in a
+            # 1d array and use two auxiliary lists for bookkeeping:
+            #  - wherepos_neigh: the positions of all connected sites as 1d array,
+            #                    i.e. the data of dict_list
+            #  - _auxwhere_list: same structure as inwhere_list, gives start_ind
+            #        of new level in flattened where:
+            #        _auxwhere_list =
+            #            [0,startpos of b-c-hops in flat where, ..., total numhops]
+            #  - auxpos_list: same structure of flattened where (except for the
+            #        last hoppings). Indicates the start position in wherepos_neigh
+            #        whose data belongs to the corresponding hopping in the
+            #        flattend where
             _auxwhere_list = np.zeros(self.N_SiteSums, dtype=gint_dtype)
             next_wherelist_start = 0
             for i, xyhops in enumerate(in_wherelist):
                 _auxwhere_list[i] = next_wherelist_start
                 next_wherelist_start += len(xyhops)
-            assert next_wherelist_start == numhops
+            assert next_wherelist_start == self.numhops
             # the last element of _auxwhere_list is the total number of hoppings
-            _auxwhere_list[self.N_SiteSums-1] = numhops
+            _auxwhere_list[self.N_SiteSums-1] = self.numhops
             self.auxwhere_list = _auxwhere_list
-       #     # create lists to help finding the positions in 'where_list' of the
-       #     # neighbors (of a given Site) in the next hopping level
+            # create lists to help finding the positions in 'where_list' of the
+            # neighbors (of a given Site) in the next hopping level
             self.wherepos_neigh, self.auxpos_list = _dictwhere_to_auxlists(in_wherelist, self.auxwhere_list, dict_list)
-        else:
+        else: # 0 or 1 hoppings -> no connected sites to be found
             self.auxwhere_list = np.asarray((0,len(self.wherelist)), dtype=gint_dtype)
             #fake auxlists
             self.wherepos_neigh = np.asarray([0], dtype=gint_dtype)
             self.auxpos_list = np.asarray((0,len(self.wherelist)), dtype=gint_dtype)
 
 
-        # print('dict_list=', dict_list)
-        # print('auxwhere_list[0]=', self.auxwhere_list[0])
-        # print('auxwhere_list[1]=', self.auxwhere_list[1])
-        # print('wherepos_neigh=', self.wherepos_neigh)
-        # print('auxpos_list=', self.auxpos_list)
-
         # create a list with all possible combinations of the given sites;
         # list ordering is the same as of the output_data
+        ### TODO?: Rather inefficient because of a recursive python function.
+        ###        However, since it is in __init__ it is not called often anyway.
         if self.N_SiteSums > 2:
             self.sitechains = _create_sitechains_output(_wherelist, self.auxwhere_list, self.auxpos_list, self.wherepos_neigh, self.N_SiteSums)
-            # print('self.sitechains = ', self.sitechains)
         # if DENSITY or Current:
         # data_length = number of Sites or Hoppings in where
-        elif self.N_SiteSums == 2:
-            self.sitechains = np.asarray([[np.int32(hop[0]),np.int32(hop[1])] for hop in self.wherelist])
-            # self.out_data_length = len(_wherelist[0])
-        else:
+        elif self.N_SiteSums == 2:  # "Current"
+            self.sitechains = np.asarray([(np.int32(hop[0]),np.int32(hop[1])) for hop in self.wherelist], dtype=gint_dtype)
+        else: # "Density"
             self.sitechains = self.wherelist #.tolist()
-            # self.out_data_length = len(_wherelist[0])
 
         self.out_data_length = len(self.sitechains)
 
@@ -692,10 +711,11 @@ cdef class generalOperator:
 
 
         # where to store the BlockSparseMatrices
-            # COMMENT: The following is a workaround to create an array of
-            # BlocksparseMatrices instead of a python list for faster access.
+            # COMMENT: The following is a workaround to create an array (MemView)
+            # of BlocksparseMatrices instead of a python list for faster access.
             # To create this array, the Blocksparsemats have to be initialized,
             # here by dummy_Blocksparse
+            # COMMENT2: Actually not needed anymore because of the c-Arrays
         def zero(*args,**kwargs):
             matrix = ta.matrix
             mat = matrix(0j, complex)
@@ -738,7 +758,10 @@ cdef class generalOperator:
     @cython.embedsignature
     def __call__(self, bra, ket=None, args=(), *, params=None):
         # self.numbercalls = self.numbercalls + 1
-        r"""Return the matrix elements of the operator.
+        r"""
+        THIS COMMENT IS STILL THE KWANT.OPERATOR.__CALL__ COMMENT AND STILL HAS
+        TO BE ADAPTED!
+        Return the matrix elements of the operator.
 
         An operator ``A`` can be called like
 
@@ -850,6 +873,7 @@ cdef class generalOperator:
         q = cls.__new__(cls)
 
         q.N_SiteSums = self.N_SiteSums
+        q.numhops = self.numhops
         q.syst = self.syst
         q._site_ranges = self._site_ranges
         q.withRevTerm = self.withRevTerm
@@ -892,24 +916,12 @@ cdef class generalOperator:
 
         return q
 
-    #100% copy of kwant.operators.Current
-    # @cython.embedsignature
-    # def bind(self, args=(), *, params=None):
-    #     """Bind the given arguments to this operator.
-    #
-    #     Returns a copy of this operator that does not need to be passed extra
-    #     arguments when subsequently called or when using the ``act`` method.
-    #     """
-    #     q = super().bind(args, params=params)
-    #     q._bound_hamiltonian = self._eval_hamiltonian(args, params)
-    #     return q
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def _operate(self, complex[:] out_data, complex[:] bra, complex[:] ket,
                  args, operation op, *, params=None):
         """Do an operation with the operator.
-            TO BE CHECKED!!!
         Parameters
         ----------
         out_data : ndarray
@@ -925,16 +937,16 @@ cdef class generalOperator:
         op : operation
          The operation to perform.
          `MAT_ELS`: calculate matrix elements between `bra` and `ket`
-         `ACT`: act on `ket` with the operator
+         `ACT`: act on `ket` with the operator. NOT YET IMPLEMENTED!
         params : dict, optional
          Dictionary of parameter names and their values. Mutually exclusive
          with 'args'.
         """
 
-        cdef int i
+        cdef int i, iSite
         # prepare matrices for onsite and arbitrary hopping functions
         cdef complex[:, :] _tmp_mat
-        #could be done in __init__, but problems with coding!
+        #could be done in __init__, but problems with creating global pointer!?
         cdef int * unique_onsite = <int*>calloc(self.N_SiteSums, sizeof(int))
         for i in range(self.N_SiteSums):
             unique_onsite[i] = not callable(self.onsite[i])
@@ -944,11 +956,9 @@ cdef class generalOperator:
                       <complex **>calloc((self.N_SiteSums-1), sizeof(complex*))
 
 
-
         cdef BlockSparseMatrix2 dummy_mat_hopval
         cdef BlockSparseMatrix2 dummy_mat_onsiteval
         # create necessary onsite BlockSparseMatrices if not unique
-        #could be done in __init__? NO! mats could change over time
         for i in range(self.N_SiteSums):
             if unique_onsite[i]:
                 _tmp_mat = self.onsite[i]
@@ -970,7 +980,6 @@ cdef class generalOperator:
                 self.hopfunc_blocks[i] = dummy_mat_hopval
 
 
-        # main loop
         #could be done in __init__
         # cdef int *x_norbs
         # x_norbs = new int (6)
@@ -1000,16 +1009,56 @@ cdef class generalOperator:
         for i in range(len(out_data)):
             pointerout_data[i] = out_data[i]
 
+        cdef complex ** pointerhopfunc_blocks = \
+                          <complex **>calloc(self.numhops, sizeof(complex*))
+        cdef complex ** pointerM_onsite_blocks =  \
+                          <complex **>calloc(self.numhops, sizeof(complex*))
+        cdef int * pointerblockshapes =  \
+                          <int *>calloc(self.numhops, sizeof(int))
+
+        cdef int depth
+        cdef int dummy = 0
+        for depth in range(self.N_SiteSums-1):
+            i = self.auxwhere_list[depth+1]-self.auxwhere_list[depth]
+            for iSite in range(i):
+                dummy_mat_hopval = self.hopfunc_blocks[depth]
+                pointerhopfunc_blocks[dummy] = dummy_mat_hopval.get(iSite)
+                pointerblockshapes[dummy] = dummy_mat_hopval.block_shapes[iSite, 1]
+                if not unique_onsite[depth]:
+                    dummy_mat_onsiteval = self.M_onsite_blocks[depth]
+                    pointerM_onsite_blocks[dummy] = dummy_mat_onsiteval.get(iSite)
+                dummy += 1
+        # last onsite block and ket starting positions;
+            # not needed if self.N_SiteSums == 1 (i.e. Density)
+        cdef complex ** pointerM_onsite_lastblock = <complex **>calloc(1, sizeof(complex*))
+        cdef int * pointerket_start_positions = <int *>calloc(1, sizeof(int))
+        cdef int length_lastblock
+        if self.N_SiteSums != 1:
+            length_lastblock = self.numhops - self.auxwhere_list[self.N_SiteSums-2]
+            # allocate c arrays
+            pointerM_onsite_lastblock =  \
+                          <complex **>calloc(length_lastblock, sizeof(complex*))
+            pointerket_start_positions =  \
+                          <int *>calloc(length_lastblock, sizeof(int))
+            # fill c arrays
+            depth = self.N_SiteSums-2
+            i = self.auxwhere_list[depth+1]-self.auxwhere_list[depth]
+            for iSite in range(i):
+                if not unique_onsite[depth+1]:
+                    dummy_mat_onsiteval = self.M_onsite_blocks[depth+1]
+                    pointerM_onsite_lastblock[iSite] = dummy_mat_onsiteval.get(iSite)
+                dummy_mat_hopval = self.hopfunc_blocks[depth]
+                pointerket_start_positions[iSite] = dummy_mat_hopval.block_offsets[iSite, 1]
         # cdef BlockSparseMatrix2 * pointerM_onsite_blocks
         # = <BlockSparseMatrix2*>malloc(self.N_SiteSums * sizeof(BlockSparseMatrix2))
-
-        for i in range(len(out_data)):
-            pointerout_data[i] = out_data[i]
         # cdef int[:] x_norbs
         # x_norbs = np.zeros(self.N_SiteSums, dtype=np.dtype("i"))
+
+
+        # main loop
         cdef int ket_start = 0
         cdef int bra_start, a_s  # indices for wave function
-        cdef int ia, iNextSite  # where given Site is to be found in wherelist
+        cdef int ia  # where given Site is to be found in wherelist
         cdef int a_norbs, norbs, norbs_next  #number of orbitals
         cdef int a, b, nextSite  # site IDs
         cdef int o1_a, o1_x, o2_x, o1_y  # orbit IDs
@@ -1018,175 +1067,29 @@ cdef class generalOperator:
         cdef complex sumtmp  # for the sum of orbitals products
         cdef int idata = 0
 
-        # # recursive functions for preparing the necessary matrices
-        # # for a given set of sites and initiate the sum over the orbitals
-        # def sitesums_recfunc(out_data, int iSite, int depth, int ket_start = 0):
-        #
-        #     cdef BlockSparseMatrix2 dummyhop_mat
-        #     cdef BlockSparseMatrix2 dummyonsite_mat
-        #
-        #     # get site ID of site connected to previous site
-        #     if self.N_SiteSums != 1:
-        #         nextSite = self.wherelist[depth-1][iSite][1]
-        #
-        #     # #recursion end: get last M_onsite and initiate sum over all orbitals
-        #     if depth == (self.N_SiteSums - 1) or self.N_SiteSums == 1:
-        #         # if needed: fill the last onsite matrix
-        #         if (not unique_onsite[depth]) and self.N_SiteSums != 1:
-        #             dummyonsite_mat =  M_onsite_blocks[depth]
-        #             M_onsite[depth] = dummyonsite_mat.get(iSite)
-        #
-        #         # sum over all orbitals for the given set of sites
-        #         sumtmp = 0
-        #         for o1_a in range(x_norbs[0]):
-        #             orbprod[0] = bra[bra_start + o1_a].conjugate()
-        #             if self.withRevTerm != 0:
-        #                 orbprod[1] = ket[bra_start + o1_a]
-        #         sumtmp = orbsums_recfunc(sumtmp, orbprod, o1_a, 0, bra_start, ket_start)
-        #         # append result for one Sites-combination to output_data
-        #         out_data.append(self.const_fac * sumtmp)
-        #
-        #     #recursion:
-        #     else:
-        #         assert depth < (self.N_SiteSums - 1)
-        #         # loop over all 'x'-Sites,
-        #         # i.e. Sites connected to the previous site (iSite)
-        #         for iNextSite in self.wherepos_dicts[depth][nextSite]:
-        #             # get M_x
-        #             if not unique_onsite[depth]:
-        #                 dummyonsite_mat =  M_onsite_blocks[depth]
-        #                 M_onsite[depth] = dummyonsite_mat.get(iNextSite)
-        #             # get O_xy
-        #             dummyhop_mat = hopfunc_blocks[depth]
-        #             hopfunc[depth] = dummyhop_mat.get(iNextSite)
-        #             # get x_norbs
-        #             x_norbs[depth+1] = dummyhop_mat.block_shapes[iNextSite, 1]
-        #
-        #             # special case for the forelast loop: get index ket_start
-        #             if depth == (self.N_SiteSums - 2):
-        #                 ket_start = dummyhop_mat.block_offsets[iNextSite, 1]
-        #
-        #             # call next recursion step
-        #             sitesums_recfunc(out_data, iNextSite, depth+1, ket_start=ket_start)
-
-
-        # # calculate the sum over all orbitals for a given set of sites
-        # def orbsums_recfunc(sumtmp, orbprod, o1_x, orbdepth, bra_start=0, ket_start=0):
-        #     assert(type(orbdepth) == int)
-        #     assert(type(o1_x) == int)
-        #     assert(type(bra_start) == int)
-        #     assert(type(ket_start) == int)
-        #
-        #     norbs = x_norbs[orbdepth]
-        #     # recursion: multiply M_x*O_xy*orbproduct(sofar), call next step
-        #     if orbdepth < (self.N_SiteSums - 1):
-        #         norbs_next = x_norbs[orbdepth+1]
-        #         for o2_x in range(norbs):
-        #             for o1_y in range(norbs_next):
-        #                 # M_x*O_xy
-        #                 orbprod_tmp[0] = M_onsite[orbdepth][o1_x*norbs+o2_x] \
-        #                                * hopfunc[orbdepth][o2_x*norbs_next+o1_y]
-        #                 # times orbproduct(sofar)
-        #                 orbprod_tmp[0] *= orbprod[0]
-        #                 # if complex conjugate term is needed
-        #                 if self.withRevTerm != 0:
-        #                     orbprod_tmp[1] = hopfunc[orbdepth][o2_x*norbs_next
-        #                                    + o1_y].conjugate() \
-        #                                    * M_onsite[orbdepth][o2_x*norbs+o1_x]
-        #                     orbprod_tmp[1] *= orbprod[1]
-        #                 # call next step
-        #                 sumtmp = orbsums_recfunc(sumtmp, orbprod_tmp,
-        #                                          o1_y, orbdepth+1,
-        #                                          bra_start, ket_start)
-        #
-        #     # recursion end: orbprod(sofar).M_z.ket_z; and sum over the products
-        #     else:
-        #         assert(orbdepth == (self.N_SiteSums - 1))
-        #         for o2_x in range(norbs):
-        #             # dot product: M_z . ket_z;
-        #             orbprod_tmp[0] = M_onsite[orbdepth][o1_x*norbs+o2_x] \
-        #                               * ket[ket_start+o2_x]
-        #             # times results so far
-        #             orbprod_tmp[0] *= orbprod[0]
-        #             # summing up result
-        #             sumtmp += orbprod_tmp[0]
-        #             # if complex conjugate term is needed
-        #             if self.withRevTerm != 0:
-        #                 orbprod_tmp[1] = bra[ket_start+o2_x].conjugate() \
-        #                                   * M_onsite[orbdepth][o2_x*norbs+o1_x]
-        #                 orbprod_tmp[1] *= orbprod[1]
-        #                 sumtmp += self.withRevTerm * orbprod_tmp[1]
-        #
-        #     return sumtmp
-        # cdef int[:,:,:] fakeDict
-        # fakeDict = np.zeros(27,dtype=np.dtype("i")).reshape((3,3,3))
-        # out_data_aux = []
         if op == MAT_ELS:
+            # loop over all a-b-hoppings
             for ia in range(self.auxwhere_list[1]):
-                #-----------------------------start non recfuncs ----------------
-                # # if only bra_a M_a ket_a:
-                # # if only Density: bra_a M_a ket_a:
-                # if self.N_SiteSums == 1:
-                #     # try:  # in where either (fake-)hoppings or directly sites
-                #     #     a = self.wherelist[0][ia][0]
-                #     # except TypeError:
-                #     # print('type(self.wherelist)=',type(self.wherelist))
-                #     # print('type(self.wherelist[0])=',type(self.wherelist[0]))
-                #     # get the first onsite matrix if necessary (ie not unique)
-                #     if not unique_onsite[0]:
-                #         dummy_mat_onsiteval = self.M_onsite_blocks[0]
-                #         M_onsite[0] = dummy_mat_onsiteval.get(ia)
-                #     a = self.wherelist[ia,0]
-                #     # a = self.where[ia, 0]
-                #     _get_orbs(self._site_ranges, a, &a_s, &a_norbs)
-                #     x_norbs[0] = a_norbs
-                #     bra_start = a_s
-                #     ket_start = bra_start
-                #      # sum over all orbitals for the given set of sites
-                #     norbs = a_norbs
-                #     orbprod[1] = 0
-                #     sumtmp = 0
-                #     for o1_a in range(x_norbs[0]):
-                #         o1_x = o1_a
-                #         orbprod[0] = bra[bra_start + o1_a].conjugate()
-                #         if self.withRevTerm != 0:
-                #             orbprod[1] = ket[bra_start + o1_a]
-                #
-                #         for o2_x in range(norbs):
-                #             orbprod_tmp[0] = \
-                #                     M_onsite[0][o1_x*norbs+o2_x] \
-                #                     * ket[ket_start+o2_x]
-                #             orbprod_tmp[0] *= orbprod[0]
-                #
-                #             sumtmp += orbprod_tmp[0]
-                #
-                #             if self.withRevTerm != 0:
-                #                 orbprod_tmp[1] = bra[ket_start+o2_x].conjugate() \
-                #                                   * M_onsite[0][o2_x*norbs+o1_x]
-                #                 orbprod_tmp[1] *= orbprod[1]
-                #                 sumtmp += self.withRevTerm * orbprod_tmp[1]
-                #
-                #     out_data[idata] = self.const_fac * sumtmp
-                #     idata = idata + 1
-                #-----------------------------end non recfuncs ----------------
-
                 # get the first onsite matrix if necessary (ie not unique)
                 if not unique_onsite[0]:
                     dummy_mat_onsiteval = self.M_onsite_blocks[0]
                     M_onsite[0] = dummy_mat_onsiteval.get(ia)
 
+                # special case: Density, ie no hopping
                 if self.N_SiteSums == 1:
                     # try:  # in where either (fake-)hoppings or directly sites
                     #     a = self.wherelist[0][ia][0]
                     # except TypeError:
                     #     a = self.wherelist[0][ia]
                     a = self.wherelist[ia,0]
-                    # a = self.where[ia, 0]
                     _get_orbs(self._site_ranges, a, &a_s, &a_norbs)
                     x_norbs[0] = a_norbs
                     bra_start = a_s
                     ket_start = bra_start
-                    # second M_onsite_blocks is Just Fake, hopfunc_blocks is not defined here
+                    # call recursive function which takes care of orbital sums
+                        # fake M_onsite_blocks and pointerblockshapes because
+                        # hopfunc_blocks, M_onsite_lastblock and
+                        # pointerket_start_positions is not needed for Density
                     sitesums_recfunc(pointerout_data,
                                      #out_data,
                                      &idata, ia
@@ -1198,10 +1101,13 @@ cdef class generalOperator:
                                      # self.wherepos_neigh,
                                      # self.auxpos_list,
                                      x_norbs,
-                                     M_onsite,
                                      hopfunc,
-                                     self.M_onsite_blocks,
-                                     self.M_onsite_blocks,
+                                     M_onsite,
+                                     pointerM_onsite_blocks,
+                                     pointerM_onsite_blocks,
+                                     pointerM_onsite_blocks,
+                                     pointerblockshapes,
+                                     pointerblockshapes,
                                      self.withRevTerm, self.const_fac,
                                      self.N_SiteSums, unique_onsite,
                                      pointerbra, pointerket
@@ -1229,10 +1135,13 @@ cdef class generalOperator:
                                      # self.wherepos_neigh,
                                      # self.auxpos_list,
                                      x_norbs,
-                                     M_onsite,
                                      hopfunc,
-                                     self.M_onsite_blocks,
-                                     self.hopfunc_blocks,
+                                     M_onsite,
+                                     pointerhopfunc_blocks,
+                                     pointerM_onsite_blocks,
+                                     pointerM_onsite_lastblock,
+                                     pointerblockshapes,
+                                     pointerket_start_positions,
                                      self.withRevTerm, self.const_fac,
                                      self.N_SiteSums, unique_onsite,
                                      pointerbra, pointerket
@@ -1258,6 +1167,11 @@ cdef class generalOperator:
         free(pointerket)
         free(pointerbra)
         free(pointerout_data)
+        free(pointerhopfunc_blocks)
+        free(pointerM_onsite_blocks)
+        free(pointerM_onsite_lastblock)
+        free(pointerblockshapes)
+        free(pointerket_start_positions)
 
 
     # def __del__(self):
@@ -1267,7 +1181,7 @@ cdef class generalOperator:
     #     free(self.M_onsite)
     #     free(self.hopfunc)
 
-
+    # evaluate hopfunc-BlockSparseMats
     cdef BlockSparseMatrix2 _eval_hop_func(self, int i, args, params):
         """Evaluate the onsite matrices on all elements of `where`"""
 
@@ -1302,7 +1216,7 @@ cdef class generalOperator:
         return BlockSparseMatrix2(self.wherelist[start:end], offsets, norbs, get_hop_func)
 
 
-     #100% copy of kwant.operators.Current
+     #99% copy of kwant.operators.Current, we only have more of them (-> int i)
     cdef BlockSparseMatrix2 _eval_onsites(self, int i, args, params):
         """Evaluate the onsite matrices on all elements of `where`"""
         assert callable(self.onsite[i])
@@ -1343,7 +1257,7 @@ cdef class generalOperator:
             offsets, norbs = kwant.operator._get_all_orbs(auxlist, self._site_ranges)
             return  BlockSparseMatrix2(auxlist, offsets, norbs, get_onsite)
 
-
+    # TODO: Available in kwant.operator, so should be here also in the genOP
     # def __getstate__(self):
     #     return (
     #         (self.check_hermiticity, self.sum),
@@ -1362,9 +1276,8 @@ cdef class generalOperator:
 
 
 
+# --------  Definition of special operators --------
 
-
-# cdef class Density(_LocalOperator):
 cdef class Density(generalOperator):
     @cython.embedsignature
     def __init__(self, syst, onsite=1, where=None, *, check_hermiticity=True, sum=False):
@@ -1375,21 +1288,11 @@ cdef class Density(generalOperator):
         super().__init__(syst, onsitelist, hopOplist, [where], withRevTerm=0,
                       const_fac=1, check_hermiticity=check_hermiticity, sum=sum)
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
-    # def __call__(self, bra, ket=None, args=(), *, params=None):
-    #     ret = self.density(bra, ket=ket, args=args, params=params)
-    #     return ret
-    #
-    # def get_sitechains(self):
-    #     return self.density.get_sitechains()
-    #
     @cython.embedsignature
     def bind(self, args=(), *, params=None):
         return super().bind(onsites_tobebound=[0], args=args, params=params)
 
 
-# cdef class Current(kwant.operator._LocalOperator):
 cdef class Current(generalOperator):
     @cython.embedsignature
     def __init__(self, syst, onsite=1, where=None, *,
@@ -1400,14 +1303,6 @@ cdef class Current(generalOperator):
 
         super().__init__(syst, onsitelist, hopOplist, [where], withRevTerm=-1, const_fac=-1j, check_hermiticity=check_hermiticity, sum=sum)
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
-    # def __call__(self, bra, ket=None, args=(), *, params=None):
-    #     return self.current(bra, ket=ket, args=args, params=params)
-    #
-    # def get_sitechains(self):
-    #     return self.source.get_sitechains()
-    #
     @cython.embedsignature
     def bind(self, args=(), *, params=None):
         return super().bind(onsites_tobebound='all',
@@ -1415,7 +1310,6 @@ cdef class Current(generalOperator):
                                  args=args, params=params)
 
 
-# cdef class Source(_LocalOperator):
 cdef class Source(generalOperator):
     @cython.embedsignature
     def __init__(self, syst, onsite=1, where=None, *, check_hermiticity=True, sum=False):
@@ -1433,15 +1327,6 @@ cdef class Source(generalOperator):
 
         super().__init__(syst, onsitelist, hopOplist, where_norm, withRevTerm=-1, const_fac=-1j, check_hermiticity=check_hermiticity, sum=sum)
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
-    # def __call__(self, bra, ket=None, args=(), *, params=None):
-    #     ret = self.source(bra, ket=ket, args=args, params=params)
-    #     return ret
-    #
-    # def get_sitechains(self):
-    #     return self.source.get_sitechains()
-
     @cython.embedsignature
     def bind(self, args=(), *, params=None):
         return super().bind(onsites_tobebound='all',
@@ -1449,7 +1334,6 @@ cdef class Source(generalOperator):
                                 args=args, params=params)
 
 
-# cdef class CurrentHdot(_LocalOperator):
 cdef class CurrentWithArbitHop(generalOperator):
     @cython.embedsignature
     def __init__(self, syst, onsite=1, arbit_hop_func=0, where=None, *,
@@ -1460,23 +1344,7 @@ cdef class CurrentWithArbitHop(generalOperator):
 
         super().__init__(syst, onsitelist, hopOplist, [where], withRevTerm=+1, const_fac=1, check_hermiticity=check_hermiticity, sum=sum)
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
-    # def __call__(self, bra, ket=None, args=(), *, params=None):
-    #     ret = self.currentWithArbitHop(bra, ket=ket, args=args, params=params)
-    #     return ret
-    #
-    # def get_sitechains(self):
-    #     return self.source.get_sitechains()
-    #
-    # @cython.embedsignature
-    # def bind(self, onsites_tobebound=[None], hoppings_tobebound=[None],
-    #          args=(),params=None):
-    #     return super().bind(onsites_tobebound,
-    #                                          hoppings_tobebound,
-    #                                          args=args, params=params)
 
-# cdef class offEnergyCurrent(_LocalOperator):
 cdef class offEnergyCurrent(generalOperator):
     @cython.embedsignature
     def __init__(self, syst, where, *, check_hermiticity=True, sum=True):
@@ -1486,29 +1354,8 @@ cdef class offEnergyCurrent(generalOperator):
 
         super().__init__(syst, onsitelist, hopOplist, where, withRevTerm=-1, const_fac=1j, check_hermiticity=check_hermiticity, sum=sum)
 
-    # @cython.boundscheck(False)
-    # @cython.wraparound(False)
-    # def __call__(self, bra, ket=None, args=(), *, params=None):
-    #     ret = self.offEnergyCurrent(bra, ket=ket, args=args, params=params)
-    #     return ret
-    #
-    # def get_sitechains(self):
-    #     return self.source.get_sitechains()
 
-    # @cython.embedsignature
-    # def bind(self, onsites_tobebound=[None], hoppings_tobebound=[None],
-    #          args=(),params=None):
-    #     return self.offEnergyCurrent.bind(onsites_tobebound, hoppings_tobebound,
-    #                                       args=args, params=params)
-
-
-
-
-
-
-
-
-
+# 100% copy from kwant.operator
 cdef class BlockSparseMatrix2:
     """A sparse matrix stored as dense blocks.
 
@@ -1549,22 +1396,8 @@ cdef class BlockSparseMatrix2:
     @cython.embedsignature
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def __init__(self, int[:, :] where = None, int[:, :] block_offsets = None,
-                  int[:, :] block_shapes = None, f = None):
-        #Default constructor
-        if where == None and block_offsets == None and \
-            block_shapes == None and f == None:
-            fakelist = np.asarray([(1,1)], dtype=gint_dtype)
-            where = fakelist
-            block_offsets = fakelist
-            block_shapes = fakelist
-            f=lambda *args, **kwargs: 0
-        # in case only one is default: Return Error
-        elif where == None or block_offsets == None or \
-            block_shapes == None or f == None:
-            raise ValueError("Constructor of BlockSparseMatrix2 needs 4 input parameters!")
-
-
+    def __init__(self, int[:, :] where, int[:, :] block_offsets,
+                  int[:, :] block_shapes, f):
         if (block_offsets.shape[0] != where.shape[0] or
             block_shapes.shape[0] != where.shape[0]):
             raise ValueError('Arrays should be the same length along '
@@ -1615,13 +1448,7 @@ cdef class BlockSparseMatrix2:
 
 
 
-
-
-#_herm_msg = ('{0} matrix is not hermitian, use the option '
-#             '`check_hermiticity=True` if this is intentional.')
-#_shape_msg = ('{0} matrix dimensions do not match '
-#      'the declared number of orbitals')
-
+#99% copy from kwant.operator -> int instead of gint
 cdef int _check_ham2(complex[:, :] H, ham, args, params,
                     int a, int a_norbs, int b, int b_norbs,
                     int check_hermiticity) except -1:
@@ -1636,7 +1463,7 @@ cdef int _check_ham2(complex[:, :] H, ham, args, params,
             raise ValueError(kwant.operator._herm_msg.format('Hamiltonian'))
     return 0
 
-
+#100% copy of kwant.operator
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef int _is_herm_conj2(complex[:, :] a, complex[:, :] b,
@@ -1666,9 +1493,9 @@ cdef int _is_herm_conj2(complex[:, :] a, complex[:, :] b,
     return True
 
 
-# if possible, use _kwant.operator._get_orbs instead
 
 
+#100% copy from kwant.operator
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef void _get_orbs(int[:, :] site_ranges, int site,
@@ -1685,29 +1512,9 @@ cdef void _get_orbs(int[:, :] site_ranges, int site,
     norbs[0] = norb
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def _get_all_orbs2(int[:, :] where, int[:, :] site_ranges):
-    cdef int[:, :] offsets = np.empty((where.shape[0], 2), dtype=gint_dtype)
-    cdef int[:, :] norbs = np.empty((where.shape[0], 2), dtype=gint_dtype)
-
-    cdef int w, a, a_offset, a_norbs, b, b_offset, b_norbs
-    for w in range(where.shape[0]):
-        a = where[w, 0]
-        _get_orbs(site_ranges, a, &a_offset, &a_norbs)
-        if where.shape[1] == 1:
-            b, b_offset, b_norbs = a, a_offset, a_norbs
-        else:
-            b = where[w, 1]
-            _get_orbs(site_ranges, b, &b_offset, &b_norbs)
-        offsets[w, 0] = a_offset
-        offsets[w, 1] = b_offset
-        norbs[w, 0] = a_norbs
-        norbs[w, 1] = b_norbs
-
-    return offsets, norbs
 
 
+#99% copy from kwant.operator -> int instead of gint
 def _get_tot_norbs(syst):
     cdef int _unused, tot_norbs
     is_infinite_system = isinstance(syst, InfiniteSystem)
@@ -1717,6 +1524,7 @@ def _get_tot_norbs(syst):
     return tot_norbs
 
 
+#99% copy from kwant.operator -> int instead of gint
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef int _bisect(int[:] a, int x):
@@ -1736,6 +1544,7 @@ _shape_msg = ('{0} matrix dimensions do not match '
 _herm_msg = ('{0} matrix is not hermitian, use the option '
              '`check_hermiticity=True` if this is intentional.')
 
+ #99% copy from kwant.operator -> int instead of gint
 cdef int _check_onsite2(complex[:, :] M, int norbs,
                        int check_hermiticity) except -1:
     "Check onsite matrix for correct shape and hermiticity."
