@@ -981,8 +981,11 @@ cdef class generalOperator:
 
 
         #could be done in __init__
-        # cdef int *x_norbs
-        # x_norbs = new int (6)
+        ### In the following, many c-arrays are created. For some of them
+        ### the data is already stored in MemoryViews and is here copied to 
+        ### the c-arrays, which is of course inefficient. Instead, these
+        ### should be created already in __init__.
+        ### -> TODO: move allocation and copying of most of these objects to __init__!
         cdef int * x_norbs = <int*>calloc(self.N_SiteSums, sizeof(int))
 
         cdef int * pointerauxwhere_list = <int*>calloc(self.N_SiteSums, sizeof(int))
@@ -1061,10 +1064,10 @@ cdef class generalOperator:
         cdef int ia  # where given Site is to be found in wherelist
         cdef int a_norbs, norbs, norbs_next  #number of orbitals
         cdef int a, b, nextSite  # site IDs
-        cdef int o1_a, o1_x, o2_x, o1_y  # orbit IDs
+        cdef int o1_a, o1_x, o2_x, o1_y  # orbit index
         cdef complex orbprod_tmp[2]  # for intermediate product of orbitals
         cdef complex orbprod[2]  # for products of orbitals
-        cdef complex sumtmp  # for the sum of orbitals products
+        cdef complex sumtmp  # for the sum of orbital products
         cdef int idata = 0
 
         if op == MAT_ELS:
