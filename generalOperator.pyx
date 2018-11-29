@@ -263,26 +263,31 @@ def _dictwhere_to_auxlists(wherelist, auxwhere_list, dict_list):
     usedSites = []
     for i, xyhops in enumerate(wherelist[:-1]):
         flattened_where_offset = auxwhere_list[i]
-        usedSites = []
+        # usedSites = []
         for j,hop in enumerate(xyhops):
-            if hop[1] in usedSites:
-                # check where it occured before
-                index = usedSites.index(hop[1])
-                # add total offset, i.e. where to find it in auxpos_list
-                index += flattened_where_offset
-                # copy that position and length
-                auxpos_list.append(auxpos_list[index])
-                # no change to new_pos, since wherepos was not extended
-            else: # site not yet searched for 'neighbors'
-                  # in next hopping-level
-                usedSites.append(hop[1])
+            # if hop[1] in usedSites:
+            #     # check where it occured before
+            #     index = usedSites.index(hop[1])
+            #     # add total offset, i.e. where to find it in auxpos_list
+            #     index += flattened_where_offset
+            #     # copy that position and length
+            #     auxpos_list.append(auxpos_list[index])
+            #     # no change to new_pos, since wherepos was not extended
+            # else: # site not yet searched for 'neighbors'
+            #       # in next hopping-level
+            #     usedSites.append(hop[1])
+            try:
                 neighlist = dict_list[i][hop[1]]
-                # append list of neighbors to wherepos
-                wherepos.extend(neighlist)
-                num_neigh = len(neighlist)
-                # append starting position in wherepos to auxpos_list
-                auxpos_list.append(new_pos)
-                new_pos += num_neigh
+            except KeyError:
+                print('Site ', hop[1], 'of operator', i, 'has no matching site in next where!')
+                neighlist = []
+
+            # append list of neighbors to wherepos
+            wherepos.extend(neighlist)
+            num_neigh = len(neighlist)
+            # append starting position in wherepos to auxpos_list
+            auxpos_list.append(new_pos)
+            new_pos += num_neigh
     #append len of wherepos to auxpos_list as last element
     auxpos_list.append(new_pos)
 
@@ -615,7 +620,7 @@ cdef class generalOperator:
                 dict_list = where_pos_idx
             # get dictionary for "connected hoppings" if not yet defined
             else:
-                dict_list = _where_to_dict_where(syst, in_wherelist)
+                dict_list = _where_to_dict_where(syst, _wherelist)
             # for calculation reasons, store the data of the dict_list in a
             # 1d array and use two auxiliary lists for bookkeeping:
             #  - wherepos_neigh: the positions of all connected sites as 1d array,
@@ -630,7 +635,7 @@ cdef class generalOperator:
             #        flattend where
             _auxwhere_list = np.zeros(self.N_SiteSums, dtype=gint_dtype)
             next_wherelist_start = 0
-            for i, xyhops in enumerate(in_wherelist):
+            for i, xyhops in enumerate(_wherelist):
                 _auxwhere_list[i] = next_wherelist_start
                 next_wherelist_start += len(xyhops)
             assert next_wherelist_start == self.numhops
@@ -639,13 +644,18 @@ cdef class generalOperator:
             self.auxwhere_list = _auxwhere_list
             # create lists to help finding the positions in 'where_list' of the
             # neighbors (of a given Site) in the next hopping level
-            self.wherepos_neigh, self.auxpos_list = _dictwhere_to_auxlists(in_wherelist, self.auxwhere_list, dict_list)
+            self.wherepos_neigh, self.auxpos_list = _dictwhere_to_auxlists(_wherelist, self.auxwhere_list, dict_list)
         else: # 0 or 1 hoppings -> no connected sites to be found
             self.auxwhere_list = np.asarray((0,len(self.wherelist)), dtype=gint_dtype)
             #fake auxlists
             self.wherepos_neigh = np.asarray([0], dtype=gint_dtype)
             self.auxpos_list = np.asarray((0,len(self.wherelist)), dtype=gint_dtype)
 
+        # printwherelist = [(hop[0], hop[1])  for hop in self.wherelist]
+        # print('wherelist: ', list(printwherelist))
+        # print('auxwhere_list: ', list(self.auxwhere_list))
+        # print('wherepos_neigh: ', list(self.wherepos_neigh))
+        # print('auxpos_list: ', list(self.auxpos_list))
 
         # create a list with all possible combinations of the given sites;
         # list ordering is the same as of the output_data
@@ -669,9 +679,9 @@ cdef class generalOperator:
             _get_orbs(self._site_ranges, a, &dummy, &a_norbs)
             _get_orbs(self._site_ranges, a, &dummy, &b_norbs)
             retmat = np.eye(a_norbs, b_norbs,dtype=complex)
-            if a==b:
+            if a!=b:
                 for ia in range(a_norbs):
-                    retmat[ia,ia] = 1+0j
+                    retmat[ia,ia] = 0+0j
             return retmat
         # replace 'default'-values 'h' and 'unit' by functions
         self.hopOperator = [None] * (self.N_SiteSums-1)
@@ -753,7 +763,7 @@ cdef class generalOperator:
     # If one wants to know which output-data belongs to which site combination
     @cython.embedsignature
     def get_sitechains(self):
-        return self.sitechains
+        return [list(path) for path in self.sitechains]
 
     @cython.embedsignature
     def __call__(self, bra, ket=None, args=(), *, params=None):
@@ -981,11 +991,8 @@ cdef class generalOperator:
 
 
         #could be done in __init__
-        ### In the following, many c-arrays are created. For some of them
-        ### the data is already stored in MemoryViews and is here copied to 
-        ### the c-arrays, which is of course inefficient. Instead, these
-        ### should be created already in __init__.
-        ### -> TODO: move allocation and copying of most of these objects to __init__!
+        # cdef int *x_norbs
+        # x_norbs = new int (6)
         cdef int * x_norbs = <int*>calloc(self.N_SiteSums, sizeof(int))
 
         cdef int * pointerauxwhere_list = <int*>calloc(self.N_SiteSums, sizeof(int))
@@ -1064,10 +1071,10 @@ cdef class generalOperator:
         cdef int ia  # where given Site is to be found in wherelist
         cdef int a_norbs, norbs, norbs_next  #number of orbitals
         cdef int a, b, nextSite  # site IDs
-        cdef int o1_a, o1_x, o2_x, o1_y  # orbit index
+        cdef int o1_a, o1_x, o2_x, o1_y  # orbit IDs
         cdef complex orbprod_tmp[2]  # for intermediate product of orbitals
         cdef complex orbprod[2]  # for products of orbitals
-        cdef complex sumtmp  # for the sum of orbital products
+        cdef complex sumtmp  # for the sum of orbitals products
         cdef int idata = 0
 
         if op == MAT_ELS:
@@ -1177,12 +1184,6 @@ cdef class generalOperator:
         free(pointerket_start_positions)
 
 
-    # def __del__(self):
-    #     print("An operator is closed.")
-    #     free(self.x_norbs)
-    #     free(self.unique_onsite)
-    #     free(self.M_onsite)
-    #     free(self.hopfunc)
 
     # evaluate hopfunc-BlockSparseMats
     cdef BlockSparseMatrix2 _eval_hop_func(self, int i, args, params):
@@ -1256,7 +1257,7 @@ cdef class generalOperator:
             # the first one
             start = self.auxwhere_list[i-1]
             end = self.auxwhere_list[i]
-            auxlist = np.asarray([(hop[1],hop[0]) for hop in self.wherelist[start:end]])
+            auxlist = np.asarray([(hop[1],hop[0]) for hop in self.wherelist[start:end]], dtype=gint_dtype)
             offsets, norbs = kwant.operator._get_all_orbs(auxlist, self._site_ranges)
             return  BlockSparseMatrix2(auxlist, offsets, norbs, get_onsite)
 
