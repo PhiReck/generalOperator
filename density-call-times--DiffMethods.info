@@ -1,0 +1,26 @@
+Info for all-dependency.pdf
+
+Efficiency comparison between different ways to calculate the Density (Psi*_a M_a Psi_a). Note that the "recursive functions"
+do not call themselves recursively in the case of the density but they are only called once end the recursion end is directly 
+performed.
+
+The Density is called 1000 times and only the added up time for these calls is plotted (but not the the time for initialization, etc.)
+The density is always calculated for the total system. 
+There are 2 orbitals per site. The first we see is a linear dependence on the system size in all cases.
+
+The system creation time is also plotted and is close to the kwant.operator.Density time, which means that the system creation 
+takes roughly 1000 times longer than the operator calculation.
+
+The different curves belong to different implementations of the recursive functions. 
+We started with normal python function (def), which takes roughly 100 times longer than the kwant.operator calculation.
+In the next step, we made the functions c-functions (cdef) where the needed lists are passed on as cython MemoryViews (eg int[:] or complex[:,:]).
+With these c-functions, we are roughly 5-6 times slower than the kwant.operator.
+For some reasons, it is more efficient to call the recursive functions with c-arrays instead of cython Memoryviews, as 
+shown in the black line. In that case, the slow-down is only roughly a factor of 2. Note that the implementation of 
+the c-arrays is not yet perfect: First the memory views are created and later in _operate, its data is copied to the 
+c-arrays. Circumventing this copy-process in future, we should be again closer to the kwant.operator efficiency.
+
+
+
+
+
