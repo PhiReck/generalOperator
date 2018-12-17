@@ -148,20 +148,20 @@ cdef class Current:
     where :math:`n` is the index of hopping :math:`(i, j)` in ``where``.
     """
 
-    cdef object current, onsite, hamil
+    cdef object current
 
     @cython.embedsignature
     def __init__(self, syst, onsite=1, where=None, *,
                  check_hermiticity=True, sum=False):
         #create instances of Operator and Onsite and multiply them
-        self.hamil = Operator(syst, syst.hamiltonian, where, check_hermiticity=check_hermiticity, sum=sum)
+        hamil = Operator(syst, syst.hamiltonian, where, withRevTerm=-1, const_fac=-1j, check_hermiticity=check_hermiticity, sum=sum)
 
         if onsite==1:
-            self.current = self.hamil
+            self.current = hamil
         else:
-            self.onsite = Onsite(syst, onsite, where=None, check_hermiticity=check_hermiticity, sum=sum, willNotBeCalled=True)
+            onsiteOp = Onsite(syst, onsite, where=None, check_hermiticity=check_hermiticity, sum=sum, willNotBeCalled=True)
 
-            self.current = Op_Product(self.onsite, self.hamil, withRevTerm=-1, const_fac=-1j, check_hermiticity=check_hermiticity, sum=sum)
+            self.current = Op_Product(onsiteOp, hamil, withRevTerm=-1, const_fac=-1j, check_hermiticity=check_hermiticity, sum=sum)
 
     @cython.embedsignature
     def bind(self, args=(), *, params=None):
@@ -218,7 +218,7 @@ cdef class Source:
     otherwise.
     """
 
-    cdef object source, hamil, onsite
+    cdef object source
 
     @cython.embedsignature
     def __init__(self, syst, onsite=1, where=None, *, check_hermiticity=True, sum=False):
@@ -230,14 +230,14 @@ cdef class Source:
             assert(type(a) == int)
             return syst.hamiltonian(a, a, *args, params=params)
 
-        self.hamil = Onsite(syst, onsiteHamil, where=None, check_hermiticity=check_hermiticity, sum=sum, willNotBeCalled=True)
+        hamil = Onsite(syst, onsiteHamil, where=None, withRevTerm=-1, const_fac=-1j, check_hermiticity=check_hermiticity, sum=sum, willNotBeCalled=True)
 
         if onsite == 1:
             self.source = self.hamil
         else:
-            self.onsite = Onsite(syst, onsite, where, check_hermiticity=check_hermiticity, sum=sum)
+            onsiteOp = Onsite(syst, onsite, where, check_hermiticity=check_hermiticity, sum=sum)
 
-            self.source = Op_Product(self.onsite, self.hamil, withRevTerm=-1, const_fac=-1j, check_hermiticity=check_hermiticity, sum=sum)
+            self.source = Op_Product(onsiteOp, hamil, withRevTerm=-1, const_fac=-1j, check_hermiticity=check_hermiticity, sum=sum)
 
     @cython.embedsignature
     def bind(self, args=(), *, params=None):
@@ -306,7 +306,9 @@ cdef class ArbitHop:
     def __init__(self, syst, onsite=1, arbit_hop_func=0, where=None, *,
                  check_hermiticity=True, sum=False, small_h=0.01):
 
-        self.hopping = Operator(syst, arbit_hop_func, where, check_hermiticity=check_hermiticity, sum=sum)
+        self.hopping = Operator(syst, arbit_hop_func, where, withRevTerm=+1,
+                                const_fac=1, check_hermiticity=check_hermiticity,
+                                sum=sum)
         if onsite == 1:
             self.arbitHop = self.hopping
         else:
@@ -1477,10 +1479,8 @@ cdef class Operator:
         q.willNotBeCalled = self.willNotBeCalled
 
         if ops_tobebound == 'all':
-            print('bind all')
             ops_tobebound = list(range(self.N_ops))
         for index in ops_tobebound:
-            print('index', index)
             if callable(self.oplist[index]):
                 q._bound_operator_list[index] = self._eval_operator(index, args, params)
                 q._bound_operator_rev_list[index] = self._eval_operator(index,
