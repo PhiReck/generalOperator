@@ -1,3 +1,6 @@
+# distutils: language = c++
+
+
 # __all__ = ['EnergyCurrent']
 
 import cython
@@ -27,6 +30,9 @@ from cython.view cimport array as cvarray
 from inspect import signature
 
 import numpy as np
+
+
+from libcpp.vector cimport vector
 
 
 gint_dtype = np.int32
@@ -253,7 +259,8 @@ cdef class Source:
 
 
 cdef class ArbitHop:
-    r"""An operator for calculating general ???.
+    r"""An operator for calculating general ??? (I don't know how to call it --
+    it is not a current).
 
     An instance of this class can be called like a function to evaluate the
     expectation value with a wavefunction. See
@@ -380,18 +387,28 @@ cdef class offEnergyCurrentLead:
         return [list(path) for path in self.offEn.sitechains]
 
 
+
+
+
+
+
+
+
 ### --- recursive functions ---
 # the actual calculation of the matrix elements happens here
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef void sitePath_recFunc(complex* out_data,
+cdef void sitePath_recFunc(complex[:] out_data, #complex* out_data,
                            int* data_count, int iSite,
                             int depth, int ket_start, int bra_start,
-                            int* auxwhere_list,
-                            int* wherepos_neigh,
-                            int* auxpos_list,
+                            vector[int] &auxwhere_list,
+                            vector[int] &wherepos_neigh,
+                            vector[int] &auxpos_list,
+                            # int* auxwhere_list,
+                            # int* wherepos_neigh,
+                            # int* auxpos_list,
                             int* x_norbs,
                             complex** opMat_array,
                             complex** opMat_rev_array,
@@ -400,8 +417,10 @@ cdef void sitePath_recFunc(complex* out_data,
                             int * block_shapes,
                             int * ket_start_positions,
                             int withRevTerm, complex const_fac, int N_ops,
-                            int* unique_array,
-                            complex* bra, complex* ket
+                            #int* unique_array,
+                            vector[int] &unique_list,
+                            complex[:] bra, complex[:] ket
+                            # complex* bra, complex* ket
                            ):
     r"""
     Recursive functions for preparing the necessary matrices for a given set of
@@ -451,7 +470,7 @@ cdef void sitePath_recFunc(complex* out_data,
         for i in range(num_neighbors):
             iNextSite = wherepos_neigh[startindex_neighbors + i]
             nextSiteOffset = auxwhere_list[depth]
-            if not unique_array[depth]:
+            if not unique_list[depth]:
                 opMat_array[depth] = op_blocks[nextSiteOffset + iNextSite]
                 if withRevTerm:
                     opMat_rev_array[depth] = op_rev_blocks[nextSiteOffset + iNextSite]
@@ -473,7 +492,7 @@ cdef void sitePath_recFunc(complex* out_data,
                              op_rev_blocks,
                              block_shapes, ket_start_positions,
                              withRevTerm, const_fac,
-                             N_ops, unique_array,
+                             N_ops, unique_list,
                              bra, ket
                             )
 
@@ -487,7 +506,8 @@ cdef complex orbsums_recfunc(complex sum, complex orbprod0, complex orbprod1,
                              int N_ops,
                              complex ** opMat_array,
                              complex ** opMat_rev_array,
-                             complex* bra, complex* ket
+                             complex[:] bra, complex[:] ket
+                             # complex* bra, complex* ket
                              ):
     r"""
     calculate the sum over all orbitals for a given set of sites passed
@@ -554,9 +574,12 @@ cdef complex orbsums_recfunc(complex sum, complex orbprod0, complex orbprod1,
 cdef sitechains_recfunc(object sitechain_data, object sitechain_aux, int iSite,
                         int depth,
                         int[:,:] where,
-                        int[:] auxwhere_list,
-                        int[:] auxpos_list,
-                        int[:] wherepos_neigh,
+                        vector[int] &auxwhere_list,
+                        vector[int] &auxpos_list,
+                        vector[int] &wherepos_neigh,
+                        # int[:] auxwhere_list,
+                        # int[:] auxpos_list,
+                        # int[:] wherepos_neigh,
                         int N_ops):
     """
     Recursive function to find all possible paths.
@@ -719,9 +742,19 @@ def _dict_and_wherelist_to_auxlists(wherelist, dict_where):
 
 
 
+def flatten_2d_lists_with_bookkeeping(twodim_list):
+    # assert()
+    value_list = []
+    auxlist = [0] * (len(twodim_list)+1)
 
+    count = 0
+    for i, lst in enumerate(twodim_list):
+        for value in lst:
+            value_list.append(value)
+            count += 1
+        auxlist[i+1] = count
 
-
+    return value_list, auxlist
 
 
 
@@ -869,13 +902,23 @@ cdef class Op_Product(Operator):
     """
 
     def __init__(self, *ops, withRevTerm=0, const_fac=1, check_hermiticity=False,
-                 sum=False, willNotBeCalled=False):
+                 sum=False, willNotBeCalled=False, in_wherepos_neigh_list=-1):
         assert len(ops) > 1
         cdef int i,j,k
         # assert that system is the same for all operators
         for i in range(1, len(ops)):
             assert ops[0].syst == ops[i].syst
-
+        # assert that in_wherepos_neigh has the right structure, if it is not
+        # the default value
+        if in_wherepos_neigh_list != -1:
+            # for each product, we need a wherepos_neigh
+            assert len(in_wherepos_neigh_list) == len(ops) - 1
+            # data have to be site-IDs, ie integers
+            assert type(in_wherepos_neigh_list[0][0][0]) == int
+            for i in range(len(ops)-1):
+                # each hopping needs to know its connected hoppings in the
+                # next operator where
+                assert len(in_wherepos_neigh_list[i]) == ops[i].auxwhere[-1] -  ops[i].auxwhere[-2]
         # store class variables
         self.syst = ops[0].syst
         self._site_ranges = ops[0]._site_ranges
@@ -893,7 +936,8 @@ cdef class Op_Product(Operator):
         self.oplist = [None] * self.N_ops
         self._onsite_params_info = [None] * self.N_ops
         self._isonsite = np.zeros(self.N_ops, dtype=gint_dtype)
-        self.unique_list = np.zeros(self.N_ops, dtype=gint_dtype)
+        # self.unique_list = np.zeros(self.N_ops, dtype=gint_dtype)
+        self.unique_vector.resize(self.N_ops, 0)
         self._bound_operator_list = [None] * self.N_ops
         self._bound_operator_rev_list = [None] * self.N_ops
         cdef int op_idx = 0
@@ -901,14 +945,15 @@ cdef class Op_Product(Operator):
             # any operator in ops can already be a product of many operators
             for j in range(len(op.oplist)):
                 assert len(op.oplist) == len(op._onsite_params_info)
-                assert len(op.oplist) == len(op.unique_list)
+                assert len(op.oplist) == len(op.unique_vector)
                 assert len(op.oplist) == len(op._isonsite)
                 assert len(op.oplist) == len(op._bound_operator_list)
                 assert len(op.oplist) == len(op._bound_operator_rev_list)
                 self.oplist[op_idx] = op.oplist[j]
                 self._onsite_params_info[op_idx] = op._onsite_params_info[j]
                 self._isonsite[op_idx] = op._isonsite[j]
-                self.unique_list[op_idx] = op.unique_list[j]
+                # self.unique_list[op_idx] = op.unique_list[j]
+                self.unique_vector[op_idx] = op.unique_vector[j]
                 self._bound_operator_list[op_idx] = op._bound_operator_list[j]
                 self._bound_operator_rev_list[op_idx] = op._bound_operator_rev_list[j]
                 op_idx += 1
@@ -930,12 +975,13 @@ cdef class Op_Product(Operator):
 
         if self.willNotBeCalled:
             print("Initialize product of uncallable operators. The product is also not callable.")
-            # we already have all that we need if this operator is not to be called
+            # we already have all objects that we need if this operator is
+            # not to be called
             return
+
 
         ### product-operator can be called -> we need:
         ### where_flat, auxlists, sitechains, output_length and dict_lists
-
 
         cdef int lstart, lend, rstart, rend
         cdef int dict_idx = 0
@@ -946,7 +992,8 @@ cdef class Op_Product(Operator):
         cdef int offset = 0
         cdef int num_added_fakehops
         cdef int auxpos_list_len, auxpos_value_offset, auxpos_idx
-        self.auxwhere_list = np.zeros(self.N_ops+1, dtype=gint_dtype)
+        # self.vecauxwhere_list = np.zeros(self.N_ops+1, dtype=gint_dtype)
+        self.vecauxwhere_list.resize(self.N_ops+1, 0)
 
         # initial operators not to be called but product is to be called
         if ops[0].willNotBeCalled and ops[1].willNotBeCalled:
@@ -963,14 +1010,21 @@ cdef class Op_Product(Operator):
             ### In this case, they are trivial and no path finding algorithm has
             ### to be used.
 
-            # self.auxwhere_list
-            self.auxwhere_list = np.asarray(
-                        range(0,self.Nhops_tot+1,len(_fakehops)),
-                        dtype=gint_dtype)
+            # self.vecauxwhere_list
+            # self.vecauxwhere_list = np.asarray(
+            #             range(0,self.Nhops_tot+1,len(_fakehops)),
+            #             dtype=gint_dtype)
+            self.vecauxwhere_list = range(0,self.Nhops_tot+1,len(_fakehops))
+            # print('self.vecauxwhere_list = ', self.vecauxwhere_list)
+
             # self.wherepos_neigh
-            self.wherepos_neigh = np.asarray(list(range(len(_fakehops)))*(self.N_ops-1), dtype=gint_dtype)
+            # self.wherepos_neigh = np.asarray(list(range(len(_fakehops)))*(self.N_ops-1), dtype=gint_dtype)
+            self.vecwherepos_neigh = list(range(len(_fakehops)))*(self.N_ops-1)
+            # print('self.vecwherepos_neigh = ', self.vecwherepos_neigh)
             # self.auxpos_list
-            self.auxpos_list = np.asarray(list(range(0,len(_fakehops)*(self.N_ops-1)+1)), dtype=gint_dtype)
+            # self.auxpos_list = np.asarray(list(range(0,len(_fakehops)*(self.N_ops-1)+1)), dtype=gint_dtype)
+            self.vecauxpos_list = range(0,len(_fakehops)*(self.N_ops-1)+1)
+            # print('self.vecauxpos_list = ', self.vecauxpos_list)
             # self.sitechains
             self.sitechains = np.asarray([range(0,len(_fakehops))], dtype=gint_dtype)
 
@@ -984,7 +1038,8 @@ cdef class Op_Product(Operator):
                 # information for where_flat, which is generated after this `if`
                 hop_el = 0
                 start = 0
-                end = opCallable.auxwhere_list[1]
+                # end = opCallable.vecauxwhere_list[1]
+                end = opCallable.vecauxwhere_list[1]
 
                 offset_uncallable = 0
                 offset_callable = opNotCallable.N_ops * (end-start)
@@ -995,34 +1050,38 @@ cdef class Op_Product(Operator):
                 ### since one of the operators is `willNotBeCalled`
                 # self.whereaux_list
                 for i in range(opNotCallable.N_ops):
-                    self.auxwhere_list[i] = (end-start) * i
+                    self.vecauxwhere_list[i] = (end-start) * i
                 for i in range(opCallable.N_ops+1):
                     j = i+opNotCallable.N_ops
-                    self.auxwhere_list[j] = \
-                     opCallable.auxwhere_list[i] + num_added_fakehops
+                    self.vecauxwhere_list[j] = \
+                     opCallable.vecauxwhere_list[i] + num_added_fakehops
 
                 # self.wherepos_neigh
-                self.wherepos_neigh = np.asarray(
-                         list(range(end-start))*opNotCallable.N_ops+list(opCallable.wherepos_neigh),
-                         dtype=gint_dtype)
+                # self.wherepos_neigh = np.asarray(
+                         # list(range(end-start))*opNotCallable.N_ops+list(opCallable.wherepos_neigh),
+                         # dtype=gint_dtype)
+
+                self.vecwherepos_neigh = list(range(end-start)) * opNotCallable.N_ops  + list(opCallable.vecwherepos_neigh)
+                # print('self.vecwherepos_neigh = ', self.vecwherepos_neigh)
 
                 # self.auxpos_list
-                if len(opCallable.auxpos_list) == 0:
+                if len(opCallable.vecauxpos_list) == 0:
                     auxpos_list_len = num_added_fakehops + 1  #last element is length of wherepos_neigh
                 else:
-                    auxpos_list_len = num_added_fakehops + len(opCallable.auxpos_list)
-                self.auxpos_list = np.zeros(auxpos_list_len, dtype=gint_dtype)
+                    auxpos_list_len = num_added_fakehops + len(opCallable.vecauxpos_list)
+                # self.vecauxpos_list = np.zeros(auxpos_list_len, dtype=gint_dtype)
+                self.vecauxpos_list.resize(auxpos_list_len, 0)
 
                 #add additional absolute 'neigh'-positions in wherepos_neigh
                 for i in range(num_added_fakehops):
-                    self.auxpos_list[i] = i
+                    self.vecauxpos_list[i] = i
                 # copy old data
-                for i in range(len(opCallable.auxpos_list)):
+                for i in range(len(opCallable.vecauxpos_list)):
                     j = i+num_added_fakehops
-                    self.auxpos_list[j] = \
-                                 opCallable.auxpos_list[i] + num_added_fakehops
-                if len(opCallable.auxpos_list) == 0:
-                    self.auxpos_list[num_added_fakehops] = num_added_fakehops
+                    self.vecauxpos_list[j] = \
+                                 opCallable.vecauxpos_list[i] + num_added_fakehops
+                if len(opCallable.vecauxpos_list) == 0:
+                    self.vecauxpos_list[num_added_fakehops] = num_added_fakehops
 
             elif ops[1].willNotBeCalled:
                 opCallable = ops[0]
@@ -1030,8 +1089,8 @@ cdef class Op_Product(Operator):
 
                 # information for where_flat, which is generated after this `if`
                 hop_el = 1
-                start = opCallable.auxwhere_list[-2]
-                end = opCallable.auxwhere_list[-1]
+                start = opCallable.vecauxwhere_list[-2]
+                end = opCallable.vecauxwhere_list[-1]
 
                 offset_uncallable = opCallable.Nhops_tot
                 offset_callable = 0
@@ -1041,40 +1100,44 @@ cdef class Op_Product(Operator):
                 ### since one of the operators is `willNotBeCalled`
                 # self.whereaux_list
                 for i in range(opCallable.N_ops):
-                    self.auxwhere_list[i] = opCallable.auxwhere_list[i]
+                    self.vecauxwhere_list[i] = opCallable.vecauxwhere_list[i]
                 for i in range(opNotCallable.N_ops+1):
                     j = i+opCallable.N_ops
-                    self.auxwhere_list[j] = \
-                      (end-start) * i + opCallable.auxwhere_list[-1]
+                    self.vecauxwhere_list[j] = \
+                      (end-start) * i + opCallable.vecauxwhere_list[-1]
 
                 # self.wherepos_neigh
-                self.wherepos_neigh = np.asarray(
-                         list(opCallable.wherepos_neigh)+
-                         list(range(end-start))*(opNotCallable.N_ops),
-                         dtype=gint_dtype)
+                # self.wherepos_neigh = np.asarray(
+                #          list(opCallable.wherepos_neigh)+
+                #          list(range(end-start))*(opNotCallable.N_ops),
+                #          dtype=gint_dtype)
+
+                self.vecwherepos_neigh = list(opCallable.vecwherepos_neigh) + \
+                                list(range(end-start)) * (opNotCallable.N_ops)
 
                 # self.auxpos_list
-                if len(opCallable.auxpos_list) == 0:
+                if len(opCallable.vecauxpos_list) == 0:
                     auxpos_list_len = num_added_fakehops + 1  #last element is length of wherepos_neigh
                 else:
-                    auxpos_list_len = num_added_fakehops + len(opCallable.auxpos_list)
-                self.auxpos_list = np.zeros(auxpos_list_len, dtype=gint_dtype)
+                    auxpos_list_len = num_added_fakehops + len(opCallable.vecauxpos_list)
+                # self.auxpos_list = np.zeros(auxpos_list_len, dtype=gint_dtype)
+                self.vecauxpos_list.resize(auxpos_list_len, 0)
                 # copy old data
-                for i in range(len(opCallable.auxpos_list)):
-                    self.auxpos_list[i] = opCallable.auxpos_list[i]
-                # check for cases in which 'opCallable.auxpos_list' does not exist
-                if len(opCallable.auxpos_list) == 0:
+                for i in range(len(opCallable.vecauxpos_list)):
+                    self.vecauxpos_list[i] = opCallable.vecauxpos_list[i]
+                # check for cases in which 'opCallable.vecauxpos_list' does not exist
+                if len(opCallable.vecauxpos_list) == 0:
                     offset_idx = 0
                     offset_value = 0
                 else:
-                    offset_idx = len(opCallable.auxpos_list)
-                    offset_value = len(opCallable.wherepos_neigh) + 1
+                    offset_idx = len(opCallable.vecauxpos_list)
+                    offset_value = len(opCallable.vecwherepos_neigh) + 1
                 #add additional absolute 'neigh'-positions in wherepos_neigh
                 for i in range(num_added_fakehops):
                     j = i+offset_idx
-                    self.auxpos_list[j] = i + offset_value
-                if len(opCallable.auxpos_list) == 0:
-                    self.auxpos_list[num_added_fakehops] = num_added_fakehops
+                    self.vecauxpos_list[j] = i + offset_value
+                if len(opCallable.vecauxpos_list) == 0:
+                    self.vecauxpos_list[num_added_fakehops] = num_added_fakehops
 
             else:
                 raise ValueError("The wrong operator multiplication option was chosen by the code.")
@@ -1107,72 +1170,78 @@ cdef class Op_Product(Operator):
             self.Nhops_tot = 0
             for op in ops:
                 self.Nhops_tot += op.Nhops_tot
-            # self.where_flat and self.auxwhere_list
+            # self.where_flat and self.vecauxwhere_list
             self.where_flat = np.zeros((self.Nhops_tot,2), dtype=gint_dtype)
             for op in ops:
                 end += op.Nhops_tot
                 for i in range(end-start):
                     for j in range(2):
                         self.where_flat[start+i][j] = op.where_flat[i][j]
-                for where_offset in op.auxwhere_list[1:]:
-                    self.auxwhere_list[aux_idx] = where_offset + start
+                for where_offset in op.vecauxwhere_list[1:]:
+                    self.vecauxwhere_list[aux_idx] = where_offset + start
                     aux_idx += 1
                 start = end
 
             # self.wherepos_neigh and self.auxpos_list
             _list_wherepos_neigh = []
-            self.auxpos_list = np.zeros(self.auxwhere_list[-2]+1, dtype = gint_dtype)
+            # self.auxpos_list = np.zeros(self.vecauxwhere_list[-2]+1, dtype = gint_dtype)
+            self.vecauxpos_list.resize(self.vecauxwhere_list[-2]+1)
             auxpos_value_offset = 0
             auxpos_idx = 0
             for i in range(len(ops)-1):
                 #copy old auxlists of i-th operator
-                _list_wherepos_neigh = _list_wherepos_neigh + list(ops[i].wherepos_neigh)
-                for j, value in enumerate(ops[i].auxpos_list[1:]):
+                _list_wherepos_neigh = _list_wherepos_neigh + list(ops[i].vecwherepos_neigh)
+                for j, value in enumerate(ops[i].vecauxpos_list[1:]):
                     auxpos_idx += 1
-                    self.auxpos_list[auxpos_idx] = value + auxpos_value_offset
+                    self.vecauxpos_list[auxpos_idx] = value + auxpos_value_offset
 
-                auxpos_value_offset += len(ops[i].wherepos_neigh)
+                auxpos_value_offset += len(ops[i].vecwherepos_neigh)
 
-                # create new dict as tool for creating the new auxlists,
-                # wherepos_neigh and auxpos_list, at the product interface
-                lstart = ops[i].auxwhere_list[-2]
-                lend = ops[i].auxwhere_list[-1]
-                rstart = ops[i+1].auxwhere_list[0]  # == 0
-                rend = ops[i+1].auxwhere_list[1]
-                # which hoppings are needed
-                _where_siteoverlap = [ops[i].where_flat[lstart:lend], ops[i+1].where_flat[rstart:rend]]
-                ### Major part of path finding:
-                # create dict for path finding
-                _newdict = _where_to_dict_where(self.syst, ops[i+1].where_flat[rstart:rend])
-                # use dict to create new partial auxlists
-                _new_wherepos_neigh, _new_auxpos_list = _dict_and_wherelist_to_auxlists(_where_siteoverlap, _newdict)
+                # check if wherepos_neigh is given, if not find all connections
+                if in_wherepos_neigh_list != -1:
+                    _new_wherepos_neigh, _new_auxpos_list = flatten_2d_lists_with_bookkeeping(in_wherepos_neigh_list[i])
+                else:
+                    # create new dict as tool for creating the new auxlists,
+                    # wherepos_neigh and auxpos_list, at the product interface
+                    lstart = ops[i].vecauxwhere_list[-2]
+                    lend = ops[i].vecauxwhere_list[-1]
+                    rstart = ops[i+1].vecauxwhere_list[0]  # == 0
+                    rend = ops[i+1].vecauxwhere_list[1]
+                    # which hoppings are needed
+                    _where_siteoverlap = [ops[i].where_flat[lstart:lend], ops[i+1].where_flat[rstart:rend]]
+                    ### Major part of path finding:
+                    # create dict for path finding
+                    _newdict = _where_to_dict_where(self.syst, ops[i+1].where_flat[rstart:rend])
+                    # use dict to create new partial auxlists
+                    _new_wherepos_neigh, _new_auxpos_list = _dict_and_wherelist_to_auxlists(_where_siteoverlap, _newdict)
 
                 # copy partial auxlists to auxlists
                 _list_wherepos_neigh = _list_wherepos_neigh + list(_new_wherepos_neigh)
                 for j, value in enumerate(_new_auxpos_list[1:]):
                     auxpos_idx += 1
-                    self.auxpos_list[auxpos_idx] = value + auxpos_value_offset
+                    self.vecauxpos_list[auxpos_idx] = value + auxpos_value_offset
 
                 auxpos_value_offset += len(_new_wherepos_neigh)
 
             # copy of old auxlists of last factor
-            _list_wherepos_neigh = _list_wherepos_neigh + list(ops[-1].wherepos_neigh)
-            for j, value in enumerate(ops[-1].auxpos_list[1:]):
+            _list_wherepos_neigh = _list_wherepos_neigh + list(ops[-1].vecwherepos_neigh)
+            for j, value in enumerate(ops[-1].vecauxpos_list[1:]):
                 auxpos_idx += 1
-                self.auxpos_list[auxpos_idx] = value + auxpos_value_offset
+                self.vecauxpos_list[auxpos_idx] = value + auxpos_value_offset
 
-            self.wherepos_neigh = np.asarray(_list_wherepos_neigh, dtype=gint_dtype)
+            # self.wherepos_neigh = np.asarray(_list_wherepos_neigh, dtype=gint_dtype)
+            self.vecwherepos_neigh = np.asarray(_list_wherepos_neigh, dtype=gint_dtype)
 
             # printwherelist = [(hop[0], hop[1])  for hop in self.where_flat]
             # print('where_flat: ', list(printwherelist))
-            # print('auxwhere_list: ', list(self.auxwhere_list))
+            # print('auxwhere_list: ', list(self.vecauxwhere_list))
             # print('wherepos_neigh: ', list(self.wherepos_neigh))
             # print('auxpos_list: ', list(self.auxpos_list))
 
             # self.sitechains
             self.sitechains = _create_sitechains_output(self.where_flat,
-                                            self.auxwhere_list, self.auxpos_list,
-                                            self.wherepos_neigh, self.N_ops)
+                                            self.vecauxwhere_list, self.vecauxpos_list,
+                                            self.vecwherepos_neigh, self.N_ops)
 
         else:
             raise ValueError("Cannot find appropriate oprtion for the operator multiplication.")
@@ -1235,11 +1304,13 @@ cdef class Operator:
     # flattened where list of hoppings
     cdef public int[:, :]  where_flat
     # 1d-auxlists, mostly for products of operators by helping in path finding
-    cdef public int[:] auxwhere_list, wherepos_neigh, auxpos_list
+    # cdef public int[:] auxwhere_list, wherepos_neigh, auxpos_list
+    cdef public vector[int] vecauxwhere_list, vecwherepos_neigh, vecauxpos_list
     # in case of bound operators
     cdef public object _bound_operator_list, _bound_operator_rev_list, _onsite_params_info
     # in case of unique operators
-    cdef public int[:] unique_list, _isonsite
+    cdef public int[:] _isonsite #, unique_list
+    cdef public vector[int] unique_vector
     # site information for _get_orbs
     cdef public int[:, :] _site_ranges
     # for onsite operators to avoid unnecessary path-finding
@@ -1261,7 +1332,7 @@ cdef class Operator:
     # cdef public int numbercalls
 
     @cython.embedsignature
-    def __init__(self, syst, opfunc, in_where, withRevTerm=0, const_fac=1, *, check_hermiticity=False, sum=False):
+    def __init__(self, syst, opfunc, in_where=None, withRevTerm=0, const_fac=1, *, check_hermiticity=False, sum=False):
         # store passed class variables
         self.syst = syst
         self.oplist = [opfunc]
@@ -1282,7 +1353,8 @@ cdef class Operator:
 
         # Store additional information in class variables
         self.N_ops = 1
-        self.unique_list = np.asarray([not callable(opfunc)],dtype=gint_dtype)
+        self.unique_vector.push_back(not callable(opfunc))
+        # self.unique_list = np.asarray([not callable(opfunc)],dtype=gint_dtype)
         self._site_ranges = np.asarray(syst.site_ranges, dtype=gint_dtype)
         self._bound_operator_list = [None]
         self._bound_operator_rev_list = [None]
@@ -1319,10 +1391,15 @@ cdef class Operator:
             self.out_data_length = self.Nhops_tot
             self.sitechains = self.where_flat
             # self.sitechains = np.asarray([(hop[0], hop[1]) for hop in self.where_flat], dtype=gint_dtype)
-            self.auxwhere_list =  np.asarray((0, self.Nhops_tot), dtype=gint_dtype)
+            # self.vecauxwhere_list =  np.asarray((0, self.Nhops_tot), dtype=gint_dtype)
+            self.vecauxwhere_list = {0, self.Nhops_tot}
+            # print('self.vecauxwhere_list = ',self.vecauxwhere_list)
 
-            self.wherepos_neigh = np.asarray([], dtype=gint_dtype)
-            self.auxpos_list = np.asarray([0], dtype=gint_dtype)
+            # self.wherepos_neigh = np.asarray([], dtype=gint_dtype)
+            # self.auxpos_list = np.asarray([0], dtype=gint_dtype)
+
+            self.vecauxpos_list.push_back(0)
+            # no need for self.vecwherepos_neigh
 
 
 
@@ -1467,10 +1544,14 @@ cdef class Operator:
         q.out_data_length = self.out_data_length
         q.sitechains = self.sitechains
         q.where_flat = self.where_flat
-        q.auxwhere_list = self.auxwhere_list
-        q.wherepos_neigh = self.wherepos_neigh
-        q.auxpos_list = self.auxpos_list
-        q.unique_list = self.unique_list
+        # q.vecauxwhere_list = self.vecauxwhere_list
+        q.vecauxwhere_list = self.vecauxwhere_list
+        # q.wherepos_neigh = self.wherepos_neigh
+        # q.auxpos_list = self.auxpos_list
+        q.vecwherepos_neigh = self.vecwherepos_neigh
+        q.vecauxpos_list = self.vecauxpos_list
+        # q.unique_list = self.unique_list
+        q.unique_vector = self.unique_vector
         q._site_ranges = self._site_ranges
         q._onsite_params_info = self._onsite_params_info
         q._isonsite = self._isonsite
@@ -1522,58 +1603,80 @@ cdef class Operator:
         ### prepare matrices for operators at needed hoppings/sites
         cdef complex[:, :] _tmp_mat
         #could be done in __init__, but problems with creating global pointer!?
-        cdef int * unique_array = <int*>calloc(self.N_ops, sizeof(int))
-        for i in range(self.N_ops):
-            unique_array[i] = self.unique_list[i]
+        # cdef int * unique_array = <int*>calloc(self.N_ops, sizeof(int))
+        # for i in range(self.N_ops):
+        #     unique_array[i] = self.unique_list[i]
         cdef complex **opMat_array = \
                           <complex **>calloc(self.N_ops, sizeof(complex*))
         # for reversed order of operators
         cdef complex **opMat_rev_array = \
                         <complex **>calloc(self.N_ops, sizeof(complex*))
 
-        cdef BlockSparseMatrix2 dummy_BSmatrix
-        cdef BlockSparseMatrix2[:] op_mat_list
-        cdef BlockSparseMatrix2[:] op_mat_rev_list
+        # cdef BlockSparseMatrix2[:] op_mat_list
+        # cdef BlockSparseMatrix2[:] op_mat_rev_list
         # initializing MemView with a dummy BlockSparseMatrix
-        cdef BlockSparseMatrix2 dummy_Blocksparse
-        def zero(*args,**kwargs):
-            matrix = ta.matrix
-            mat = matrix(0j, complex)
-            return mat
-        fakelist = np.asarray([(1,1)], dtype=gint_dtype)
-        dummy_Blocksparse = BlockSparseMatrix2(fakelist,fakelist,fakelist, zero)
-        dummy_mat_list = [dummy_Blocksparse]*(self.N_ops)
+        # cdef BlockSparseMatrix2 dummy_Blocksparse
+        # def zero(*args,**kwargs):
+        #     matrix = ta.matrix
+        #     mat = matrix(0j, complex)
+        #     return mat
+        # fakelist = np.asarray([(1,1)], dtype=gint_dtype)
+        # dummy_Blocksparse = BlockSparseMatrix2(fakelist,fakelist,fakelist, zero)
+        # dummy_mat_list = [dummy_Blocksparse]*(self.N_ops)
+        # op_mat_list = []*(self.N_ops)
+        # op_mat_rev_list = []*(self.N_ops)
 
         # store necessary BlockSparseMatrices if not unique
+        cdef BlockSparseMatrix2 dummy_BSmatrix
+        cdef complex ** pointerop_blocks = \
+                            <complex **>calloc(self.Nhops_tot, sizeof(complex*))
+        cdef complex ** pointerop_rev_blocks = \
+                            <complex **>calloc(self.Nhops_tot, sizeof(complex*))
+        cdef int numSites, site
+        cdef int idx_count = 0
         for i in range(self.N_ops):
-            if unique_array[i]:
+            numSites = self.vecauxwhere_list[i+1]-self.vecauxwhere_list[i]
+            # if unique_array[i]:
+            if self.unique_vector[i]:
                 _tmp_mat = self.oplist[i]
                 opMat_array[i] = <complex*> &_tmp_mat[0, 0]
-                # op_mat_list[i] = None
-            elif self._bound_operator_list[i]:
-                dummy_BSmatrix = self._bound_operator_list[i]
-                dummy_mat_list[i] = dummy_BSmatrix
+                idx_count += numSites
             else:
-                dummy_BSmatrix = self._eval_operator(i, args, params)
-                dummy_mat_list[i] = dummy_BSmatrix
+                if self._bound_operator_list[i]:
+                    dummy_BSmatrix = self._bound_operator_list[i]
+                else:
+                    dummy_BSmatrix = self._eval_operator(i, args, params)
 
-        op_mat_list = np.asarray(dummy_mat_list)
+                # store data(=matels) of BlockSparseMat in array
+                for site in range(numSites):
+                    pointerop_blocks[idx_count] = dummy_BSmatrix.get(site)
+                    idx_count += 1
+
+
+        # op_mat_list = np.asarray(dummy_mat_list)
 
         # create O_yx (instead of O_xy) if needed
+        idx_count = 0
         if self.withRevTerm:
             for i in range(self.N_ops):
-                if unique_array[i]:  # transposed needed? probably not!
+                numSites = self.vecauxwhere_list[i+1]-self.vecauxwhere_list[i]
+                # if unique_array[i]:
+                if self.unique_vector[i]: # transposed needed? probably not!
                     _tmp_mat = self.oplist[i]
                     opMat_rev_array[i] = <complex*> &_tmp_mat[0, 0]
-                elif self._isonsite[i]:
-                    pass  # dummy_mat_list is the same as in the nonrev case
-                elif self._bound_operator_rev_list[i]:
-                    dummy_BSmatrix = self._bound_operator_rev_list[i]
-                    dummy_mat_list[i] = dummy_BSmatrix
+                    idx_count += numSites
                 else:
-                    dummy_BSmatrix = self._eval_operator(i, args, params, rev=True)
-                    dummy_mat_list[i] = dummy_BSmatrix
-            op_mat_rev_list = np.asarray(dummy_mat_list)
+                    if self._bound_operator_rev_list[i]:
+                        dummy_BSmatrix = self._bound_operator_rev_list[i]
+                    else:
+                        dummy_BSmatrix = self._eval_operator(i, args, params, rev=True)
+
+                    # store data(=matels) of BlockSparseMat in array
+                    numSites = self.vecauxwhere_list[i+1]-self.vecauxwhere_list[i]
+                    for site in range(numSites):
+                        pointerop_rev_blocks[idx_count] = dummy_BSmatrix.get(site)
+                        idx_count += 1
+            # op_mat_rev_list = np.asarray(dummy_mat_list)
         ## COMMENT: For hermitian operators, an additional list would not be
         ## needed, but it would mean making the code more complex.
 
@@ -1587,52 +1690,54 @@ cdef class Operator:
         ### PROBLEM: How to create pointer as public class variable?
         cdef int * x_norbs = <int*>calloc(self.N_ops+1, sizeof(int))
 
-        cdef int * pointerauxwhere_list = <int*>calloc(self.N_ops+1, sizeof(int))
-        for i in range(self.N_ops+1):
-            pointerauxwhere_list[i] = self.auxwhere_list[i]
+        # cdef int * pointerauxwhere_list = <int*>calloc(self.N_ops+1, sizeof(int))
+        # for i in range(self.N_ops+1):
+        #     pointerauxwhere_list[i] = self.vecauxwhere_list[i]
+        #
+        # cdef int * pointerwherepos_neigh = <int*>calloc(len(self.vecwherepos_neigh), sizeof(int))
+        # for i in range(len(self.vecwherepos_neigh)):
+        #     pointerwherepos_neigh[i] = self.vecwherepos_neigh[i]
+        #
+        # cdef int * pointerauxpos_list = <int*>calloc(len(self.vecauxpos_list), sizeof(int))
+        # for i in range(len(self.vecauxpos_list)):
+        #     pointerauxpos_list[i] = self.vecauxpos_list[i]
 
-        cdef int * pointerwherepos_neigh = <int*>calloc(len(self.wherepos_neigh), sizeof(int))
-        for i in range(len(self.wherepos_neigh)):
-            pointerwherepos_neigh[i] = self.wherepos_neigh[i]
+        #
+        # cdef complex * pointerbra = <complex*>calloc(len(bra), sizeof(complex))
+        # for i in range(len(bra)):
+        #     pointerbra[i] = bra[i]
+        #
+        # cdef complex * pointerket = <complex*>calloc(len(ket), sizeof(complex))
+        # for i in range(len(ket)):
+        #     pointerket[i] = ket[i]
 
-        cdef int * pointerauxpos_list = <int*>calloc(len(self.auxpos_list), sizeof(int))
-        for i in range(len(self.auxpos_list)):
-            pointerauxpos_list[i] = self.auxpos_list[i]
+        # cdef complex * pointerout_data = <complex*>calloc(len(out_data), sizeof(complex))
+        # for i in range(len(out_data)):
+        #     pointerout_data[i] = out_data[i]
 
-
-        cdef complex * pointerbra = <complex*>calloc(len(bra), sizeof(complex))
-        for i in range(len(bra)):
-            pointerbra[i] = bra[i]
-
-        cdef complex * pointerket = <complex*>calloc(len(ket), sizeof(complex))
-        for i in range(len(ket)):
-            pointerket[i] = ket[i]
-
-        cdef complex * pointerout_data = <complex*>calloc(len(out_data), sizeof(complex))
-        for i in range(len(out_data)):
-            pointerout_data[i] = out_data[i]
-
-        cdef complex ** pointerop_blocks = \
-                            <complex **>calloc(self.Nhops_tot, sizeof(complex*))
-        cdef complex ** pointerop_rev_blocks = \
-                            <complex **>calloc(self.Nhops_tot, sizeof(complex*))
-        cdef int depth
-        cdef int dummy = 0
-        for depth in range(self.N_ops):
-            i = self.auxwhere_list[depth+1]-self.auxwhere_list[depth]
-            for iSite in range(i):
-                if not unique_array[depth]:
-                    dummy_BSmatrix = op_mat_list[depth]
-                    pointerop_blocks[dummy] = dummy_BSmatrix.get(iSite)
-                    if self.withRevTerm:
-                        dummy_BSmatrix = op_mat_rev_list[depth]
-                        pointerop_rev_blocks[dummy] = dummy_BSmatrix.get(iSite)
-                dummy += 1
+        # cdef complex ** pointerop_blocks = \
+        #                     <complex **>calloc(self.Nhops_tot, sizeof(complex*))
+        # cdef complex ** pointerop_rev_blocks = \
+        #                     <complex **>calloc(self.Nhops_tot, sizeof(complex*))
+        # cdef int depth
+        # cdef int dummy = 0
+        # for depth in range(self.N_ops):
+        #     i = self.vecauxwhere_list[depth+1]-self.vecauxwhere_list[depth]
+        #     for iSite in range(i):
+        #         # if not unique_array[depth]:
+        #         if not self.unique_vector[depth]:
+        #             dummy_BSmatrix = op_mat_list[depth]
+        #             pointerop_blocks[dummy] = dummy_BSmatrix.get(iSite)
+        #             if self.withRevTerm:
+        #                 dummy_BSmatrix = op_mat_rev_list[depth]
+        #                 pointerop_rev_blocks[dummy] = dummy_BSmatrix.get(iSite)
+        #         dummy += 1
 
         # get wf starting indices and norbs at sites in where and store in c-array
         cdef int length_lastblock
-        length_lastblock = self.Nhops_tot - self.auxwhere_list[self.N_ops-1]
+        length_lastblock = self.Nhops_tot - self.vecauxwhere_list[self.N_ops-1]
         # allocate c array
+
         cdef int * pointerblockshapes =  \
                                     <int *>calloc(self.Nhops_tot, sizeof(int))
         cdef int * pointerket_start_positions =  \
@@ -1641,7 +1746,7 @@ cdef class Operator:
         cdef int * pointerbra_start_positions
         if self._isonsite[0]:
             pointerbra_start_positions =  \
-                        <int *>calloc(self.auxwhere_list[1], sizeof(int))
+                        <int *>calloc(self.vecauxwhere_list[1], sizeof(int))
         else:
             pointerbra_start_positions =  \
                         <int *>calloc(1, sizeof(int))
@@ -1653,13 +1758,13 @@ cdef class Operator:
             _get_orbs(self._site_ranges, site, &wf_st_dum, &norb_dum)
             pointerblockshapes[i] = norb_dum
             # only last block
-            if i > (self.auxwhere_list[self.N_ops-1] - 1):
-                j =  i - self.auxwhere_list[self.N_ops-1]
+            if i > (self.vecauxwhere_list[self.N_ops-1] - 1):
+                j =  i - self.vecauxwhere_list[self.N_ops-1]
                 pointerket_start_positions[j] = wf_st_dum
-            # only first block if first op is onsite to avoird calling _get_orbs again
-            if self._isonsite[0] and i < self.auxwhere_list[1]:
+            # only first block if first op is onsite to avoid calling _get_orbs again
+            if self._isonsite[0] and i < self.vecauxwhere_list[1]:
                 pointerbra_start_positions[i] = wf_st_dum
-       ### END copying process of MemViews to pointers
+        ### END copying process of MemViews to pointers
 
 
 
@@ -1672,9 +1777,10 @@ cdef class Operator:
 
         if op == MAT_ELS:
             # loop over all a-b-hoppings
-            for ia in range(self.auxwhere_list[1]):
+            for ia in range(self.vecauxwhere_list[1]):
                 # get the first operator matrix if necessary (ie not unique)
-                if not unique_array[0]:
+                # if not unique_array[0]:
+                if not self.unique_vector[0]:
                     opMat_array[0] = pointerop_blocks[ia]
                     if self.withRevTerm:
                         opMat_rev_array[0] = pointerop_rev_blocks[ia]
@@ -1691,11 +1797,14 @@ cdef class Operator:
                 x_norbs[1] = pointerblockshapes[ia]
 
                 # call recursive function to get all needed Mats for given Sites
-                sitePath_recFunc(pointerout_data,
+                sitePath_recFunc(out_data,
                                  &data_count, ia, 1, ket_start, bra_start,
-                                 pointerauxwhere_list,
-                                 pointerwherepos_neigh,
-                                 pointerauxpos_list,
+                                 # pointerauxwhere_list,
+                                 # pointerwherepos_neigh,
+                                 # pointerauxpos_list,
+                                 self.vecauxwhere_list,
+                                 self.vecwherepos_neigh,
+                                 self.vecauxpos_list,
                                  x_norbs,
                                  opMat_array,
                                  opMat_rev_array,
@@ -1704,15 +1813,18 @@ cdef class Operator:
                                  pointerblockshapes,
                                  pointerket_start_positions,
                                  self.withRevTerm, self.const_fac,
-                                 self.N_ops, unique_array,
-                                 pointerbra, pointerket
+                                 self.N_ops,
+                                 #unique_array,
+                                 self.unique_vector,
+                                 bra, ket
+                                 # pointerbra, pointerket
                                  )
                 # END OF LOOP OVER ALL SITE COMBINATIONS
 
-            # gather data for output
-            assert data_count == self.out_data_length
-            for i in range(self.out_data_length):
-                out_data[i] = pointerout_data[i]
+            # # gather data for output
+            # assert data_count == self.out_data_length
+            # for i in range(self.out_data_length):
+            #     out_data[i] = pointerout_data[i]
 
 
         elif op == ACT:
@@ -1720,15 +1832,17 @@ cdef class Operator:
 
 
         free(x_norbs)
-        free(unique_array)
+        # free(unique_array)
         free(opMat_array)
-        free(pointerauxpos_list)
-        free(pointerauxwhere_list)
-        free(pointerwherepos_neigh)
-        free(pointerket)
-        free(pointerbra)
-        free(pointerout_data)
+        free(opMat_rev_array)
+        # free(pointerauxwhere_list)
+        # free(pointerwherepos_neigh)
+        # free(pointerauxpos_list)
+        # free(pointerket)
+        # free(pointerbra)
+        # free(pointerout_data)
         free(pointerop_blocks)
+        free(pointerop_rev_blocks)
         free(pointerblockshapes)
         free(pointerket_start_positions)
         free(pointerbra_start_positions)
@@ -1773,8 +1887,8 @@ cdef class Operator:
                 return mat
         # use only those parts of self.where_flat, which correspond to the
         # given operator
-        start = self.auxwhere_list[i]
-        end = self.auxwhere_list[i+1]
+        start = self.vecauxwhere_list[i]
+        end = self.vecauxwhere_list[i+1]
         if not rev:
             auxhops = self.where_flat[start:end]
         else:
