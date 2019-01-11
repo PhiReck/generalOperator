@@ -622,7 +622,6 @@ def _create_sitechains_output(where, auxwhere_list, auxpos_list, wherepos_neigh,
     only in the `Op_Product.__init__()` instead of `Operator._operate()`.
     """
 
-
     sitechain_data = []
     sitechain_aux = [None] * (N_ops + 1)
     # loop over all 'a'-Sites and initialize first step (for 'b'-Sites)
@@ -905,6 +904,7 @@ cdef class Op_Product(Operator):
                  sum=False, willNotBeCalled=False, in_wherepos_neigh_list=-1):
         assert len(ops) > 1
         cdef int i,j,k
+        cdef int veclen
         # assert that system is the same for all operators
         for i in range(1, len(ops)):
             assert ops[0].syst == ops[i].syst
@@ -918,7 +918,8 @@ cdef class Op_Product(Operator):
             for i in range(len(ops)-1):
                 # each hopping needs to know its connected hoppings in the
                 # next operator where
-                assert len(in_wherepos_neigh_list[i]) == ops[i].auxwhere[-1] -  ops[i].auxwhere[-2]
+                veclen = len(ops[i].vecauxwhere_list)
+                assert len(in_wherepos_neigh_list[i]) == ops[i].vecauxwhere_list[veclen-1] -  ops[i].vecauxwhere_list[veclen-2]
         # store class variables
         self.syst = ops[0].syst
         self._site_ranges = ops[0]._site_ranges
@@ -992,6 +993,7 @@ cdef class Op_Product(Operator):
         cdef int offset = 0
         cdef int num_added_fakehops
         cdef int auxpos_list_len, auxpos_value_offset, auxpos_idx
+        cdef int scndtolast
         # self.vecauxwhere_list = np.zeros(self.N_ops+1, dtype=gint_dtype)
         self.vecauxwhere_list.resize(self.N_ops+1, 0)
 
@@ -1015,16 +1017,13 @@ cdef class Op_Product(Operator):
             #             range(0,self.Nhops_tot+1,len(_fakehops)),
             #             dtype=gint_dtype)
             self.vecauxwhere_list = range(0,self.Nhops_tot+1,len(_fakehops))
-            # print('self.vecauxwhere_list = ', self.vecauxwhere_list)
 
             # self.wherepos_neigh
             # self.wherepos_neigh = np.asarray(list(range(len(_fakehops)))*(self.N_ops-1), dtype=gint_dtype)
             self.vecwherepos_neigh = list(range(len(_fakehops)))*(self.N_ops-1)
-            # print('self.vecwherepos_neigh = ', self.vecwherepos_neigh)
             # self.auxpos_list
             # self.auxpos_list = np.asarray(list(range(0,len(_fakehops)*(self.N_ops-1)+1)), dtype=gint_dtype)
             self.vecauxpos_list = range(0,len(_fakehops)*(self.N_ops-1)+1)
-            # print('self.vecauxpos_list = ', self.vecauxpos_list)
             # self.sitechains
             self.sitechains = np.asarray([range(0,len(_fakehops))], dtype=gint_dtype)
 
@@ -1062,7 +1061,6 @@ cdef class Op_Product(Operator):
                          # dtype=gint_dtype)
 
                 self.vecwherepos_neigh = list(range(end-start)) * opNotCallable.N_ops  + list(opCallable.vecwherepos_neigh)
-                # print('self.vecwherepos_neigh = ', self.vecwherepos_neigh)
 
                 # self.auxpos_list
                 if len(opCallable.vecauxpos_list) == 0:
@@ -1089,8 +1087,9 @@ cdef class Op_Product(Operator):
 
                 # information for where_flat, which is generated after this `if`
                 hop_el = 1
-                start = opCallable.vecauxwhere_list[-2]
-                end = opCallable.vecauxwhere_list[-1]
+                veclen = len(opCallable.vecauxwhere_list)
+                start = opCallable.vecauxwhere_list[veclen-2]
+                end = opCallable.vecauxwhere_list[veclen-1]
 
                 offset_uncallable = opCallable.Nhops_tot
                 offset_callable = 0
@@ -1104,7 +1103,7 @@ cdef class Op_Product(Operator):
                 for i in range(opNotCallable.N_ops+1):
                     j = i+opCallable.N_ops
                     self.vecauxwhere_list[j] = \
-                      (end-start) * i + opCallable.vecauxwhere_list[-1]
+                      (end-start) * i + opCallable.vecauxwhere_list[veclen-1]
 
                 # self.wherepos_neigh
                 # self.wherepos_neigh = np.asarray(
@@ -1185,7 +1184,8 @@ cdef class Op_Product(Operator):
             # self.wherepos_neigh and self.auxpos_list
             _list_wherepos_neigh = []
             # self.auxpos_list = np.zeros(self.vecauxwhere_list[-2]+1, dtype = gint_dtype)
-            self.vecauxpos_list.resize(self.vecauxwhere_list[-2]+1)
+            scndtolast = len(self.vecauxwhere_list)-2
+            self.vecauxpos_list.resize(self.vecauxwhere_list[scndtolast]+1)
             auxpos_value_offset = 0
             auxpos_idx = 0
             for i in range(len(ops)-1):
@@ -1203,8 +1203,9 @@ cdef class Op_Product(Operator):
                 else:
                     # create new dict as tool for creating the new auxlists,
                     # wherepos_neigh and auxpos_list, at the product interface
-                    lstart = ops[i].vecauxwhere_list[-2]
-                    lend = ops[i].vecauxwhere_list[-1]
+                    veclen = len(ops[i].vecauxwhere_list)
+                    lstart = ops[i].vecauxwhere_list[veclen-2]
+                    lend = ops[i].vecauxwhere_list[veclen-1]
                     rstart = ops[i+1].vecauxwhere_list[0]  # == 0
                     rend = ops[i+1].vecauxwhere_list[1]
                     # which hoppings are needed
@@ -1228,21 +1229,16 @@ cdef class Op_Product(Operator):
             for j, value in enumerate(ops[-1].vecauxpos_list[1:]):
                 auxpos_idx += 1
                 self.vecauxpos_list[auxpos_idx] = value + auxpos_value_offset
-
+            self.vecwherepos_neigh.resize(len(_list_wherepos_neigh))
             # self.wherepos_neigh = np.asarray(_list_wherepos_neigh, dtype=gint_dtype)
             self.vecwherepos_neigh = np.asarray(_list_wherepos_neigh, dtype=gint_dtype)
 
-            # printwherelist = [(hop[0], hop[1])  for hop in self.where_flat]
-            # print('where_flat: ', list(printwherelist))
-            # print('auxwhere_list: ', list(self.vecauxwhere_list))
-            # print('wherepos_neigh: ', list(self.wherepos_neigh))
-            # print('auxpos_list: ', list(self.auxpos_list))
-
             # self.sitechains
             self.sitechains = _create_sitechains_output(self.where_flat,
-                                            self.vecauxwhere_list, self.vecauxpos_list,
-                                            self.vecwherepos_neigh, self.N_ops)
-
+                                                        self.vecauxwhere_list,
+                                                        self.vecauxpos_list,
+                                                        self.vecwherepos_neigh,
+                                                        self.N_ops)
         else:
             raise ValueError("Cannot find appropriate oprtion for the operator multiplication.")
 
@@ -1393,7 +1389,6 @@ cdef class Operator:
             # self.sitechains = np.asarray([(hop[0], hop[1]) for hop in self.where_flat], dtype=gint_dtype)
             # self.vecauxwhere_list =  np.asarray((0, self.Nhops_tot), dtype=gint_dtype)
             self.vecauxwhere_list = {0, self.Nhops_tot}
-            # print('self.vecauxwhere_list = ',self.vecauxwhere_list)
 
             # self.wherepos_neigh = np.asarray([], dtype=gint_dtype)
             # self.auxpos_list = np.asarray([0], dtype=gint_dtype)
@@ -1598,7 +1593,6 @@ cdef class Operator:
          Dictionary of parameter names and their values. Mutually exclusive
          with 'args'.
         """
-
         cdef int i, iSite
         ### prepare matrices for operators at needed hoppings/sites
         cdef complex[:, :] _tmp_mat
@@ -1765,7 +1759,6 @@ cdef class Operator:
             if self._isonsite[0] and i < self.vecauxwhere_list[1]:
                 pointerbra_start_positions[i] = wf_st_dum
         ### END copying process of MemViews to pointers
-
 
 
         # main loop
