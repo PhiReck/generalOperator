@@ -100,9 +100,9 @@ cdef class Density:
     def __call__(self, bra, ket=None, args=(), *, params=None):
         return self.dens(bra, ket, args, params=params)
 
-    @cython.embedsignature
-    def get_sitechains(self):
-        return [list(path) for path in self.dens.sitechains]
+    # @cython.embedsignature
+    # def get_sitechains(self):
+    #     return [list(path) for path in self.dens.sitechains]
 
 
 cdef class Current:
@@ -175,8 +175,8 @@ cdef class Current:
     def __call__(self, bra, ket=None, args=(), *, params=None):
         return self.current(bra, ket, args, params=params)
 
-    def get_sitechains(self):
-        return [list(path) for path in self.current.sitechains]
+    # def get_sitechains(self):
+    #     return [list(path) for path in self.current.sitechains]
 
 
 
@@ -251,8 +251,8 @@ cdef class Source:
     def __call__(self, bra, ket=None, args=(), *, params=None):
         return self.source(bra, ket, args, params=params)
 
-    def get_sitechains(self):
-        return [list(path) for path in self.source.sitechains]
+    # def get_sitechains(self):
+    #     return [list(path) for path in self.source.sitechains]
 
 
 
@@ -286,12 +286,12 @@ cdef class ArbitHop:
     sum : bool, default: False
         If True, then calling this operator will return a single scalar,
         otherwise a vector will be returned (see
-        `~kwant.operator.Current.__call__` for details).
+        `~Operator.__call__` for details).
 
     Notes
     -----
-    This operator is at the moment needed for calculating the explicite time-
-    dependent part of the Coupling-Term I_c in the LeadHeatCurrent.
+    This operator is needed for calculating the explicitly time-dependent
+    part of the coupling term :math:`I_c` in the LeadHeatCurrent.
     In general, having an onsite operator represented by a square matrix
     :math:`M_i` associated with each site :math:`i` and :math:`O_{ij}` is
     a hopping Operator from site :math:`j` to site `i`, then an instance of
@@ -300,8 +300,6 @@ cdef class ArbitHop:
     O_{ij}\right]` when α and β are orbitals on sites :math:`i` and :math:`j`
     respectively, and zero otherwise.
 
-    The tensor :math:`J_{ijαβ}` will also be referred to as :math:`Q_{nαβ}`,
-    where :math:`n` is the index of hopping :math:`(i, j)` in ``where``.
     """
 
     cdef object arbitHop, onsite, hopping
@@ -328,8 +326,8 @@ cdef class ArbitHop:
     def __call__(self, bra, ket=None, args=(), *, params=None):
         return self.arbitHop(bra, ket, args, params=params)
 
-    def get_sitechains(self):
-        return [list(path) for path in self.arbitcurrent.sitechains]
+    # def get_sitechains(self):
+    #     return [list(path) for path in self.arbitcurrent.sitechains]
 
 
 cdef class offEnergyCurrent:
@@ -341,25 +339,22 @@ cdef class offEnergyCurrent:
     Parameters
     ----------
     syst : `~kwant.system.System`
-    where : stacked lists of hoppings [[intralead-hoppings],[lead-sys-hoppings]]
-    ##COMMENT: check hermiticity not needed for hamiltonians!
-    # check_hermiticity : bool
-    #    Check whether the provided ``onsite`` is Hermitian. If it
-    #    is not Hermitian, then an error will be raised when the
-    #    operator is evaluated. (NOTE: Probably not necessary here.)
+    where : stacked lists of hoppings [[lead-sys-hoppings],[lead-lead-hoppings]]
+    check_hermiticity : bool
+       If the operator is not Hermitian, an error will be raised when the
+       operator is evaluated. (NOTE: Probably not necessary here.)
     sum : bool, default: true
         If True, then calling this operator will return a single scalar,
         otherwise a vector will be returned (see
         Operator.__call__` for details).
-        It should be true for the lead energy current, where we need the sum.
 
     Notes
     -----
-    To be evaluated: :math:`\sum_{ijq} [ -2 Im\{ bra^\ast_{q} H_{qi} H_{ij} ket_{j}  \}]`,
+    To be evaluated: :math:`\sum_{ijq} [ -2 Im\{ bra^\dagger_{q} H_{qi} H_{ij} ket_{j}  \}]`,
     where :math:`q` is a site in the scattering region and :math:`i\neq j` are
     sites in the lead.
-    Since :math:`H_{qi}` is only non-zero for 1st lead unit cell, it has to be
-    in 1st lead unit cell and :math:`j` either in 1st or 2nd lead unit cell.
+    Since :math:`H_{qi}` is only non-zero for :math:`i` in the 1st lead unit cell,
+    :math:`j` has to be either in the 1st or 2nd lead unit cell.
     """
 
     cdef object hamil1, hamil2, offEn
@@ -561,13 +556,15 @@ cdef class Onsite(Operator):
     An operator for calculating the matrix elements of an onsite operator (some
     kind of density) and/or for using it to multiply with other operators.
 
-    An instance of this class can be called like a function to evaluate the
+    Since this class inherites from ``operator``, an instance of this class
+    can be called like a function to evaluate the
     expectation value with a wavefunction. See `Operator.__call__` for details.
+
 
     Parameters
     ----------
     syst : `~kwant.system.System`
-    opfunc : scalar, square matrix, dict or callable
+    onsite : scalar, square matrix, dict or callable
         If a dict is given, it maps from site families to square matrices
         (scalars are allowed if the site family has 1 orbital per site).
         If a function is given it must take the same arguments as the
@@ -579,13 +576,15 @@ cdef class Onsite(Operator):
         a finalized builder) and return True or False.  If not provided, the
         operator will be calculated over all sites in the system.
     Optional
-    withRevTerm : denotes if the complex conjugate is to be calculated (~reverting
+    withRevTerm : int
+        denotes if the complex conjugate is to be calculated (~reverting
         the order of the operators). It should be either +1, 0 or -1, where the
         sign denotes if the complex conjugate is added or substracted.
         ## COMMENT: Might not make sense for an onsite operator ##
-    const_fac : a constant factor which is multiplied to the result of the operator
+    const_fac : complex
+        a constant factor which is multiplied to the result of the operator
     check_hermiticity : bool, default False
-        Check whether the provided ``opfunc`` is Hermitian. If it is not
+        Check whether the provided ``onsite`` is Hermitian. If it is not
         Hermitian, then an error will be raised when the operator is
         evaluated.
     sum : bool, default: False
@@ -609,11 +608,11 @@ cdef class Onsite(Operator):
     """
 
     @cython.embedsignature
-    def __init__(self, syst, opfunc, where, withRevTerm=0, const_fac=1, *, check_hermiticity=False, sum=False, willNotBeCalled=False):
+    def __init__(self, syst, onsite, where, withRevTerm=0, const_fac=1, *, check_hermiticity=False, sum=False, willNotBeCalled=False):
         # store onsite-related class variales
         self._isonsite = np.asarray([1],dtype=gint_dtype)
         self._onsite_params_info = [None]
-        onsite, self._onsite_params_info[0] = kwant.operator._normalize_onsite(syst, opfunc, check_hermiticity)
+        _onsite, self._onsite_params_info[0] = kwant.operator._normalize_onsite(syst, onsite, check_hermiticity)
 
         # willNotBeCalled to improve efficiency in case of an operator product
         # it is only important if where == None
@@ -631,7 +630,7 @@ cdef class Onsite(Operator):
             where_fakehops_transposed[1] = _where
             where_fakehops = np.transpose(where_fakehops_transposed)
         # The remaining class variables are stored by Operator.__init__
-        super().__init__(syst, onsite, where_fakehops, withRevTerm, const_fac,
+        super().__init__(syst, _onsite, where_fakehops, withRevTerm, const_fac,
                          check_hermiticity=check_hermiticity, sum=sum)
 
 
@@ -639,7 +638,7 @@ cdef class Op_Product(Operator):
     r"""
     An operator for calculating the product of an arbitrary amount of operators,
     which are either onsite operators, :math:`M_i`, or hopping operators,
-    :math:`O_{ij}`, where :math:`i` and :math:`j` are sites (possibly :math:`i=j`).
+    :math:`O_{ij}`, where :math:`i` and :math:`j` are sites (possibly :math:`i==j`).
 
     An instance of this class can be called like a function to evaluate the
     expectation value with a wavefunction. See `Operator.__call__` for details.
@@ -647,19 +646,23 @@ cdef class Op_Product(Operator):
     Here, 4 different cases are considered:
         - Operators were not callable and will *not* be callable after product
         - Operators were not callable and will be callable after product
-        - Some Operators were not callable other were callable. Product callable
+        - Mixture of callable and uncallable operators. At the moment, this
+          case is restricted to exactly 1 callable and 1 uncallable operator.
         - None of the operators was not callable. Product callable
 
     Parameters
     ----------
-    ops : a list of of operators to be multiplied. In most cases, these Operators
-          are instances of either `Operator` or `Onsite`.
+    ops : a list of of operators to be multiplied.
+        In most cases, these Operators are instances of either `Operator` or `Onsite`.
 
     Optional
-    withRevTerm: denotes if the term with reversed order of the operators is to
+    withRevTerm : int
+        denotes if the term with reversed order of the operators is to
         be calculated (~complex conjugate). It should be either +1, 0 or -1,
         where the sign denotes if the reverted term is added or substracted.
-    const_fac: a constant complex factor which is multiplied to the result of the operator
+    const_fac : complex
+        a constant complex factor which is multiplied to the
+        result of the operator
     check_hermiticity : bool, default: False
         Check whether each single operator is Hermitian. If it
         is not Hermitian, then an error will be raised when the
@@ -680,8 +683,6 @@ cdef class Op_Product(Operator):
         represented by the relative position of a hopping in the where of the
         corresponding Hamiltonian.
 
-
-
     Notes
     -----
     Examples, where products of operators are needed are general currents,
@@ -693,12 +694,10 @@ cdef class Op_Product(Operator):
     where :math:`q` is a site in the scattering region and :math:`i`, :math:`j`
     are sites in the lead.
     The calculation for the matrix elements of the product of operators is
-    similar to the kwant.operators, with the difference that now
-    lists of some objects are needed. The arbitrary amount of operators is handled
-    by recursive functions, e.g. to calculate the sum over the orbitals.
+    similar to the specialized operators inheriting from
+    `~kwant.operator._LocalOperator`, with the difference that now
+    lists of some objects are needed.
 
-    Unfortunately, variable names do not follow a strict convention. Some of the
-    names are not precise or even misleading. (To be fixed.)
     """
 
     def __init__(self, *ops, withRevTerm=0, const_fac=1, check_hermiticity=True,
@@ -1071,8 +1070,9 @@ cdef class Op_Product(Operator):
 
 cdef class Operator:
     r"""
-    An operator for calculating the matrix elements of a hopping operator and/or
-    for using it to multiply with other operators.
+    Base class of operators.
+    If initialized directly, a hopping operator is created which can either be
+    used to calculate its matrix elements or to multiply it with other operators.
 
     An instance of this class can be called like a function to evaluate the
     expectation value with a wavefunction. See `Operator.__call__` for details.
@@ -1092,11 +1092,15 @@ cdef class Operator:
         `~kwant.builder.Site` (if ``syst`` is a finalized builder) and return
         True or False.  If not provided, the operator will be calculated over
         all hoppings in the system.
+
     Optional
-    withRevTerm : denotes if the complex conjugate is to be calculated (~reverting
-        the order of the operators). It should be either +1, 0 or -1, where the
+
+    withRevTerm : int, default : 0
+        denotes if the complex conjugate is to be calculated (~reverting
+        the order of the operators). In most cases, it should be either +1, 0 or -1, where the
         sign denotes if the complex conjugate is added or substracted.
-    const_fac : a constant factor which is multiplied to the result of the operator
+    const_fac : complex
+        a constant factor which is multiplied to the result of the operator
     check_hermiticity : bool, default False
         Check whether the provided ``opfunc`` is Hermitian. If it is not
         Hermitian, then an error will be raised when the operator is
@@ -1107,8 +1111,11 @@ cdef class Operator:
 
     Notes
     -----
-    This class is mostly needed for the particle currents, or to multiply it
-    with other operators, e.g. to get the spin current.
+    This class is the base class of all operators, i.e. also for onsite operators
+    and products of operators.
+    It generalizes the `~kwant.operator._LocalOperator` class in the sense that
+    it provides a unique `_operate` method which is able to calculate the matrix
+    element of any (product of) operator(s).
     """
 
     # mostly input parametes
@@ -1223,7 +1230,8 @@ cdef class Operator:
         Returns list of all possible paths which are in the same order as
         the output_data-list.
         """
-        if self.sitechains.size == 0:
+        cdef int i, rel_pos, abs_pos
+        if self.sitechains.size != 0:
             return [list(path) for path in self.sitechains]
         else:
             ret_list= []
@@ -1231,6 +1239,10 @@ cdef class Operator:
                 for i, rel_pos in enumerate(path):
                     abs_pos = rel_pos + self.auxwhere_list[i]
                     ret_list.append(self.whereflat[abs_pos,0])
+                    if i == self.N_ops - 1:
+                        abs_pos = rel_pos + self.auxwhere_list[i]
+                        ret_list.append(self.whereflat[abs_pos,1])
+            self.sitechains = np.asarray(ret_list, dtype=gint_dtype)
             return ret_list
 
     @cython.embedsignature
@@ -1344,10 +1356,16 @@ cdef class Operator:
 
     @cython.embedsignature
     def bind(self, ops_tobebound=[], *, args=(), params=None):
-        """Bind the given arguments to this operators in ops_tobebound.
+        """Bind the given arguments to those operators specified in the
+        list of bools ``ops_tobebound``.
 
         Returns a copy of this operator that does not need to be passed extra
-        arguments when subsequently called.
+        arguments for the specified operators when subsequently called.
+
+        Notes:
+        ------
+        Probably, it does not make sense to bind only single operators, since
+        they are either unique or need all the same parameters anyway.
         """
         if args and params:
             raise TypeError("'args' and 'params' are mutually exclusive.")

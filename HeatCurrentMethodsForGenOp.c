@@ -1141,7 +1141,7 @@ struct __pyx_obj_26HeatCurrentMethodsForGenOp___pyx_scope_struct_8_genexpr {
  * 
  *         where_unfinalized = list((syst.sites[hop[0]],syst.sites[hop[1]]) for hop in where_norm_swapped)             # <<<<<<<<<<<<<<
  *         #initialize 'onSite' term of Energy Current
- *         self.onSite_j = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)
+ *         self.onSite_j = generalOperator.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)
  */
 struct __pyx_obj_26HeatCurrentMethodsForGenOp___pyx_scope_struct_9_genexpr {
   PyObject_HEAD
@@ -2410,7 +2410,6 @@ static const char __pyx_k_pyx_type[] = "__pyx_type";
 static const char __pyx_k_qualname[] = "__qualname__";
 static const char __pyx_k_resulton[] = "resulton";
 static const char __pyx_k_setstate[] = "__setstate__";
-static const char __pyx_k_AdelsIdea[] = "AdelsIdea";
 static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_enumerate[] = "enumerate";
 static const char __pyx_k_fullwhere[] = "fullwhere";
@@ -2479,6 +2478,7 @@ static const char __pyx_k_neigh_whereaux[] = "neigh_whereaux";
 static const char __pyx_k_View_MemoryView[] = "View.MemoryView";
 static const char __pyx_k_allocate_buffer[] = "allocate_buffer";
 static const char __pyx_k_dtype_is_object[] = "dtype_is_object";
+static const char __pyx_k_generalOperator[] = "generalOperator";
 static const char __pyx_k_heatCurrentNoIc[] = "heatCurrentNoIc";
 static const char __pyx_k_intercell_sites[] = "intercell_sites";
 static const char __pyx_k_intracell_sites[] = "intracell_sites";
@@ -2531,7 +2531,6 @@ static const char __pyx_k_LocalEnergyCurrent___call[] = "LocalEnergyCurrent.__ca
 static const char __pyx_k_LocalEnergyCurrent___init[] = "LocalEnergyCurrent.__init__";
 static const char __pyx_k_return_expl_time_dep_real[] = "return_expl_time_dep_real";
 static const char __pyx_k_HeatCurrentMethodsForGenOp[] = "HeatCurrentMethodsForGenOp";
-static const char __pyx_k_generalOperatorPathsbefore[] = "generalOperatorPathsbefore";
 static const char __pyx_k_itemsize_0_for_cython_array[] = "itemsize <= 0 for cython.array";
 static const char __pyx_k_LeadEnergyCurrent_get_onwhere[] = "LeadEnergyCurrent.get_onwhere";
 static const char __pyx_k_unable_to_allocate_array_data[] = "unable to allocate array data.";
@@ -2544,7 +2543,6 @@ static const char __pyx_k_The_heatCurrent_is_given_by_I_h[] = " The heatCurrent 
 static const char __pyx_k_create_list_of_certain_neighbor[] = "_create_list_of_certain_neighbors";
 static const char __pyx_k_create_where_and_path_lists_for[] = "_create_where_and_path_lists_for_local_ECurr";
 static const char __pyx_k_create_where_and_path_lists_fro[] = "_create_where_and_path_lists_from_added_sites_for_lead";
-static const char __pyx_k_AdelsIdea_generalOperatorPathsbe[] = "AdelsIdea.generalOperatorPathsbefore";
 static const char __pyx_k_Buffer_view_does_not_expose_stri[] = "Buffer view does not expose strides";
 static const char __pyx_k_Can_only_create_a_buffer_that_is[] = "Can only create a buffer that is contiguous in memory.";
 static const char __pyx_k_Cannot_assign_to_read_only_memor[] = "Cannot assign to read-only memoryview";
@@ -2566,8 +2564,6 @@ static const char __pyx_k_create_list_of_certain_neighbor_2[] = "_create_list_of
 static const char __pyx_k_LeadEnergyCurrent___init___local_2[] = "LeadEnergyCurrent.__init__.<locals>.onsiteHamil";
 static const char __pyx_k_LocalEnergyCurrent___init___loca_2[] = "LocalEnergyCurrent.__init__.<locals>.onsiteHamil";
 static PyObject *__pyx_n_s_ASCII;
-static PyObject *__pyx_n_s_AdelsIdea;
-static PyObject *__pyx_n_s_AdelsIdea_generalOperatorPathsbe;
 static PyObject *__pyx_kp_s_An_operator_for_calculating_the;
 static PyObject *__pyx_kp_s_An_operator_for_calculating_the_2;
 static PyObject *__pyx_n_s_ArbitHop;
@@ -2660,7 +2656,7 @@ static PyObject *__pyx_n_s_fortran;
 static PyObject *__pyx_n_u_fortran;
 static PyObject *__pyx_n_s_fsyst;
 static PyObject *__pyx_n_s_fullwhere;
-static PyObject *__pyx_n_s_generalOperatorPathsbefore;
+static PyObject *__pyx_n_s_generalOperator;
 static PyObject *__pyx_n_s_genexpr;
 static PyObject *__pyx_n_s_get_offwhere;
 static PyObject *__pyx_n_s_get_onwhere;
@@ -3780,7 +3776,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  *         self.energyCurrent = LeadEnergyCurrent(syst, intracell_sites, intercell_sites, check_hermiticity=True)
  * 
  *         curr_where = self.energyCurrent.get_onwhere()             # <<<<<<<<<<<<<<
- *         self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where, \
+ *         self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where, \
  *                  check_hermiticity=True, sum=True)
  */
   __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_energyCurrent); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 85, __pyx_L1_error)
@@ -3809,23 +3805,20 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
   /* "HeatCurrentMethodsForGenOp.pyx":86
  * 
  *         curr_where = self.energyCurrent.get_onwhere()
- *         self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where, \             # <<<<<<<<<<<<<<
+ *         self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where, \             # <<<<<<<<<<<<<<
  *                  check_hermiticity=True, sum=True)
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 86, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 86, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_Current); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_Current); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 86, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 86, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_cur_scope->__pyx_v_syst);
+  PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_cur_scope->__pyx_v_syst);
   __pyx_t_3 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_onsite, __pyx_int_1) < 0) __PYX_ERR(0, 86, __pyx_L1_error)
@@ -3833,7 +3826,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
 
   /* "HeatCurrentMethodsForGenOp.pyx":87
  *         curr_where = self.energyCurrent.get_onwhere()
- *         self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where, \
+ *         self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where, \
  *                  check_hermiticity=True, sum=True)             # <<<<<<<<<<<<<<
  * 
  *         # derivative of the Hamiltonian by finite difference
@@ -3844,14 +3837,14 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
   /* "HeatCurrentMethodsForGenOp.pyx":86
  * 
  *         curr_where = self.energyCurrent.get_onwhere()
- *         self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where, \             # <<<<<<<<<<<<<<
+ *         self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where, \             # <<<<<<<<<<<<<<
  *                  check_hermiticity=True, sum=True)
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 86, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_particleCurrent, __pyx_t_1) < 0) __PYX_ERR(0, 86, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3905,7 +3898,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  *         else:
  *             Hdot = tderiv_Hamil             # <<<<<<<<<<<<<<
  *         #Create instance of explicitely t-dep terms
- *         self.tdepCoupling = AdelsIdea.generalOperatorPathsbefore.ArbitHop(syst, onsite=1, \
+ *         self.tdepCoupling = generalOperator.ArbitHop(syst, onsite=1, \
  */
   /*else*/ {
     __Pyx_INCREF(__pyx_v_tderiv_Hamil);
@@ -3916,61 +3909,58 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
   /* "HeatCurrentMethodsForGenOp.pyx":101
  *             Hdot = tderiv_Hamil
  *         #Create instance of explicitely t-dep terms
- *         self.tdepCoupling = AdelsIdea.generalOperatorPathsbefore.ArbitHop(syst, onsite=1, \             # <<<<<<<<<<<<<<
+ *         self.tdepCoupling = generalOperator.ArbitHop(syst, onsite=1, \             # <<<<<<<<<<<<<<
  *                             arbit_hop_func=Hdot, where=curr_where, \
  *                             check_hermiticity=False, sum=True)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 101, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_ArbitHop); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 101, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_ArbitHop); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 101, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyTuple_New(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 101, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_cur_scope->__pyx_v_syst);
-  __pyx_t_2 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 101, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_onsite, __pyx_int_1) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_cur_scope->__pyx_v_syst);
+  __pyx_t_4 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_onsite, __pyx_int_1) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":102
  *         #Create instance of explicitely t-dep terms
- *         self.tdepCoupling = AdelsIdea.generalOperatorPathsbefore.ArbitHop(syst, onsite=1, \
+ *         self.tdepCoupling = generalOperator.ArbitHop(syst, onsite=1, \
  *                             arbit_hop_func=Hdot, where=curr_where, \             # <<<<<<<<<<<<<<
  *                             check_hermiticity=False, sum=True)
  * 
  */
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_arbit_hop_func, __pyx_v_Hdot) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_where, __pyx_v_curr_where) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_arbit_hop_func, __pyx_v_Hdot) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_where, __pyx_v_curr_where) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":103
- *         self.tdepCoupling = AdelsIdea.generalOperatorPathsbefore.ArbitHop(syst, onsite=1, \
+ *         self.tdepCoupling = generalOperator.ArbitHop(syst, onsite=1, \
  *                             arbit_hop_func=Hdot, where=curr_where, \
  *                             check_hermiticity=False, sum=True)             # <<<<<<<<<<<<<<
  * 
  *         #Create instance of of I^E_{shifted}
  */
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_check_hermiticity, Py_False) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_sum, Py_True) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_check_hermiticity, Py_False) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_sum, Py_True) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":101
  *             Hdot = tderiv_Hamil
  *         #Create instance of explicitely t-dep terms
- *         self.tdepCoupling = AdelsIdea.generalOperatorPathsbefore.ArbitHop(syst, onsite=1, \             # <<<<<<<<<<<<<<
+ *         self.tdepCoupling = generalOperator.ArbitHop(syst, onsite=1, \             # <<<<<<<<<<<<<<
  *                             arbit_hop_func=Hdot, where=curr_where, \
  *                             check_hermiticity=False, sum=True)
  */
-  __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 101, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_1, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 101, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_tdepCoupling, __pyx_t_4) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_tdepCoupling, __pyx_t_2) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":107
  *         #Create instance of of I^E_{shifted}
@@ -3979,8 +3969,8 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  *                                         intracell_sites, intercell_sites)
  *         neighSitesAttachedToLead = _create_list_of_certain_neighbors(syst,
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_create_list_of_certain_neighbor); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_create_list_of_certain_neighbor); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
 
   /* "HeatCurrentMethodsForGenOp.pyx":108
  *             # Create needed site-lists
@@ -3989,56 +3979,56 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  *         neighSitesAttachedToLead = _create_list_of_certain_neighbors(syst,
  *                                         sitesAttachedToLead, intracell_sites)
  */
-  __pyx_t_3 = NULL;
+  __pyx_t_1 = NULL;
   __pyx_t_6 = 0;
-  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_3)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_3);
+  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_4))) {
+    __pyx_t_1 = PyMethod_GET_SELF(__pyx_t_4);
+    if (likely(__pyx_t_1)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_1);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_2, function);
+      __Pyx_DECREF_SET(__pyx_t_4, function);
       __pyx_t_6 = 1;
     }
   }
   #if CYTHON_FAST_PYCALL
-  if (PyFunction_Check(__pyx_t_2)) {
-    PyObject *__pyx_temp[4] = {__pyx_t_3, __pyx_cur_scope->__pyx_v_syst, __pyx_v_intracell_sites, __pyx_v_intercell_sites};
-    __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_GOTREF(__pyx_t_4);
+  if (PyFunction_Check(__pyx_t_4)) {
+    PyObject *__pyx_temp[4] = {__pyx_t_1, __pyx_cur_scope->__pyx_v_syst, __pyx_v_intracell_sites, __pyx_v_intercell_sites};
+    __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_GOTREF(__pyx_t_2);
   } else
   #endif
   #if CYTHON_FAST_PYCCALL
-  if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
-    PyObject *__pyx_temp[4] = {__pyx_t_3, __pyx_cur_scope->__pyx_v_syst, __pyx_v_intracell_sites, __pyx_v_intercell_sites};
-    __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_GOTREF(__pyx_t_4);
+  if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
+    PyObject *__pyx_temp[4] = {__pyx_t_1, __pyx_cur_scope->__pyx_v_syst, __pyx_v_intracell_sites, __pyx_v_intercell_sites};
+    __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_GOTREF(__pyx_t_2);
   } else
   #endif
   {
-    __pyx_t_1 = PyTuple_New(3+__pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 107, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    if (__pyx_t_3) {
-      __Pyx_GIVEREF(__pyx_t_3); PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_3); __pyx_t_3 = NULL;
+    __pyx_t_3 = PyTuple_New(3+__pyx_t_6); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    if (__pyx_t_1) {
+      __Pyx_GIVEREF(__pyx_t_1); PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1); __pyx_t_1 = NULL;
     }
     __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
     __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-    PyTuple_SET_ITEM(__pyx_t_1, 0+__pyx_t_6, __pyx_cur_scope->__pyx_v_syst);
+    PyTuple_SET_ITEM(__pyx_t_3, 0+__pyx_t_6, __pyx_cur_scope->__pyx_v_syst);
     __Pyx_INCREF(__pyx_v_intracell_sites);
     __Pyx_GIVEREF(__pyx_v_intracell_sites);
-    PyTuple_SET_ITEM(__pyx_t_1, 1+__pyx_t_6, __pyx_v_intracell_sites);
+    PyTuple_SET_ITEM(__pyx_t_3, 1+__pyx_t_6, __pyx_v_intracell_sites);
     __Pyx_INCREF(__pyx_v_intercell_sites);
     __Pyx_GIVEREF(__pyx_v_intercell_sites);
-    PyTuple_SET_ITEM(__pyx_t_1, 2+__pyx_t_6, __pyx_v_intercell_sites);
-    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_1, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    PyTuple_SET_ITEM(__pyx_t_3, 2+__pyx_t_6, __pyx_v_intercell_sites);
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_3, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_v_sitesAttachedToLead = __pyx_t_4;
-  __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_v_sitesAttachedToLead = __pyx_t_2;
+  __pyx_t_2 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":109
  *         sitesAttachedToLead = _create_list_of_certain_neighbors(syst,
@@ -4047,8 +4037,8 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  *                                         sitesAttachedToLead, intracell_sites)
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_create_list_of_certain_neighbor); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 109, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_create_list_of_certain_neighbor); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
 
   /* "HeatCurrentMethodsForGenOp.pyx":110
  *                                         intracell_sites, intercell_sites)
@@ -4057,56 +4047,56 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  * 
  *         self.energyCurrentShifted = LeadEnergyCurrent(syst, sitesAttachedToLead,
  */
-  __pyx_t_1 = NULL;
+  __pyx_t_3 = NULL;
   __pyx_t_6 = 0;
-  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_1 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_1)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_1);
+  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_4))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_4);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_3);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_2, function);
+      __Pyx_DECREF_SET(__pyx_t_4, function);
       __pyx_t_6 = 1;
     }
   }
   #if CYTHON_FAST_PYCALL
-  if (PyFunction_Check(__pyx_t_2)) {
-    PyObject *__pyx_temp[4] = {__pyx_t_1, __pyx_cur_scope->__pyx_v_syst, __pyx_v_sitesAttachedToLead, __pyx_v_intracell_sites};
-    __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 109, __pyx_L1_error)
-    __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __Pyx_GOTREF(__pyx_t_4);
+  if (PyFunction_Check(__pyx_t_4)) {
+    PyObject *__pyx_temp[4] = {__pyx_t_3, __pyx_cur_scope->__pyx_v_syst, __pyx_v_sitesAttachedToLead, __pyx_v_intracell_sites};
+    __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 109, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_GOTREF(__pyx_t_2);
   } else
   #endif
   #if CYTHON_FAST_PYCCALL
-  if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
-    PyObject *__pyx_temp[4] = {__pyx_t_1, __pyx_cur_scope->__pyx_v_syst, __pyx_v_sitesAttachedToLead, __pyx_v_intracell_sites};
-    __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 109, __pyx_L1_error)
-    __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __Pyx_GOTREF(__pyx_t_4);
+  if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
+    PyObject *__pyx_temp[4] = {__pyx_t_3, __pyx_cur_scope->__pyx_v_syst, __pyx_v_sitesAttachedToLead, __pyx_v_intracell_sites};
+    __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 109, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_GOTREF(__pyx_t_2);
   } else
   #endif
   {
-    __pyx_t_3 = PyTuple_New(3+__pyx_t_6); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 109, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    if (__pyx_t_1) {
-      __Pyx_GIVEREF(__pyx_t_1); PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1); __pyx_t_1 = NULL;
+    __pyx_t_1 = PyTuple_New(3+__pyx_t_6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 109, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    if (__pyx_t_3) {
+      __Pyx_GIVEREF(__pyx_t_3); PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_3); __pyx_t_3 = NULL;
     }
     __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
     __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-    PyTuple_SET_ITEM(__pyx_t_3, 0+__pyx_t_6, __pyx_cur_scope->__pyx_v_syst);
+    PyTuple_SET_ITEM(__pyx_t_1, 0+__pyx_t_6, __pyx_cur_scope->__pyx_v_syst);
     __Pyx_INCREF(__pyx_v_sitesAttachedToLead);
     __Pyx_GIVEREF(__pyx_v_sitesAttachedToLead);
-    PyTuple_SET_ITEM(__pyx_t_3, 1+__pyx_t_6, __pyx_v_sitesAttachedToLead);
+    PyTuple_SET_ITEM(__pyx_t_1, 1+__pyx_t_6, __pyx_v_sitesAttachedToLead);
     __Pyx_INCREF(__pyx_v_intracell_sites);
     __Pyx_GIVEREF(__pyx_v_intracell_sites);
-    PyTuple_SET_ITEM(__pyx_t_3, 2+__pyx_t_6, __pyx_v_intracell_sites);
-    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_3, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 109, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    PyTuple_SET_ITEM(__pyx_t_1, 2+__pyx_t_6, __pyx_v_intracell_sites);
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 109, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_v_neighSitesAttachedToLead = __pyx_t_4;
-  __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_v_neighSitesAttachedToLead = __pyx_t_2;
+  __pyx_t_2 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":112
  *                                         sitesAttachedToLead, intracell_sites)
@@ -4115,8 +4105,8 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  *                         neighSitesAttachedToLead, check_hermiticity=True)
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_LeadEnergyCurrent); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 112, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_LeadEnergyCurrent); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
 
   /* "HeatCurrentMethodsForGenOp.pyx":113
  * 
@@ -4125,20 +4115,20 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  * 
  * 
  */
-  __pyx_t_2 = PyTuple_New(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 112, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_4 = PyTuple_New(3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_cur_scope->__pyx_v_syst);
+  PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_cur_scope->__pyx_v_syst);
   __Pyx_INCREF(__pyx_v_sitesAttachedToLead);
   __Pyx_GIVEREF(__pyx_v_sitesAttachedToLead);
-  PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_sitesAttachedToLead);
+  PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_v_sitesAttachedToLead);
   __Pyx_INCREF(__pyx_v_neighSitesAttachedToLead);
   __Pyx_GIVEREF(__pyx_v_neighSitesAttachedToLead);
-  PyTuple_SET_ITEM(__pyx_t_2, 2, __pyx_v_neighSitesAttachedToLead);
-  __pyx_t_3 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 113, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_check_hermiticity, Py_True) < 0) __PYX_ERR(0, 113, __pyx_L1_error)
+  PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_v_neighSitesAttachedToLead);
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 113, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_check_hermiticity, Py_True) < 0) __PYX_ERR(0, 113, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":112
  *                                         sitesAttachedToLead, intracell_sites)
@@ -4147,13 +4137,13 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17heatCurrentWithIc___ini
  *                         neighSitesAttachedToLead, check_hermiticity=True)
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 112, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_4, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_energyCurrentShifted, __pyx_t_1) < 0) __PYX_ERR(0, 112, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_energyCurrentShifted, __pyx_t_3) < 0) __PYX_ERR(0, 112, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":75
  * 
@@ -4711,7 +4701,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_15heatCurrentNoIc___init_
  *         self.energyCurrent = LeadEnergyCurrent(syst, intracell_sites, intercell_sites, check_hermiticity=True)
  * 
  *         curr_where = self.energyCurrent.get_onwhere()             # <<<<<<<<<<<<<<
- *         self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where,
+ *         self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where,
  *                  check_hermiticity=True, sum=True)
  */
   __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_energyCurrent); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 150, __pyx_L1_error)
@@ -4740,23 +4730,20 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_15heatCurrentNoIc___init_
   /* "HeatCurrentMethodsForGenOp.pyx":151
  * 
  *         curr_where = self.energyCurrent.get_onwhere()
- *         self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where,             # <<<<<<<<<<<<<<
+ *         self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where,             # <<<<<<<<<<<<<<
  *                  check_hermiticity=True, sum=True)
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 151, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 151, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 151, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_Current); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 151, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_Current); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 151, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 151, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 151, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
   __Pyx_INCREF(__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_v_syst);
+  PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_v_syst);
   __pyx_t_3 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 151, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_onsite, __pyx_int_1) < 0) __PYX_ERR(0, 151, __pyx_L1_error)
@@ -4764,7 +4751,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_15heatCurrentNoIc___init_
 
   /* "HeatCurrentMethodsForGenOp.pyx":152
  *         curr_where = self.energyCurrent.get_onwhere()
- *         self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where,
+ *         self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where,
  *                  check_hermiticity=True, sum=True)             # <<<<<<<<<<<<<<
  * 
  * 
@@ -4775,14 +4762,14 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_15heatCurrentNoIc___init_
   /* "HeatCurrentMethodsForGenOp.pyx":151
  * 
  *         curr_where = self.energyCurrent.get_onwhere()
- *         self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where,             # <<<<<<<<<<<<<<
+ *         self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where,             # <<<<<<<<<<<<<<
  *                  check_hermiticity=True, sum=True)
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 151, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 151, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_particleCurrent, __pyx_t_1) < 0) __PYX_ERR(0, 151, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -5272,7 +5259,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17LeadEnergyCurrent_8__in
  *                 a = syst.id_by_site[a]
  *             assert(type(a) == int)             # <<<<<<<<<<<<<<
  *             return syst.hamiltonian(a, a, *args, params=params)
- *         self.onSite = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
+ *         self.onSite = generalOperator.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
@@ -5290,7 +5277,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17LeadEnergyCurrent_8__in
  *                 a = syst.id_by_site[a]
  *             assert(type(a) == int)
  *             return syst.hamiltonian(a, a, *args, params=params)             # <<<<<<<<<<<<<<
- *         self.onSite = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
+ *         self.onSite = generalOperator.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
  * 
  */
   __Pyx_XDECREF(__pyx_r);
@@ -6349,33 +6336,30 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17LeadEnergyCurrent___ini
   /* "HeatCurrentMethodsForGenOp.pyx":246
  * 
  *         #initialize 'offSite' term of Energy Current
- *         self.offSite = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(             # <<<<<<<<<<<<<<
+ *         self.offSite = generalOperator.offEnergyCurrent(             # <<<<<<<<<<<<<<
  *                                 syst, self.offwhere, relPathList=relPathList,
  *                                 check_hermiticity=check_hermiticity, sum=True)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 246, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 246, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 246, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_n_s_offEnergyCurrent); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 246, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_offEnergyCurrent); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 246, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":247
  *         #initialize 'offSite' term of Energy Current
- *         self.offSite = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite = generalOperator.offEnergyCurrent(
  *                                 syst, self.offwhere, relPathList=relPathList,             # <<<<<<<<<<<<<<
  *                                 check_hermiticity=check_hermiticity, sum=True)
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_offwhere); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 247, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_offwhere); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 247, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
 
   /* "HeatCurrentMethodsForGenOp.pyx":246
  * 
  *         #initialize 'offSite' term of Energy Current
- *         self.offSite = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(             # <<<<<<<<<<<<<<
+ *         self.offSite = generalOperator.offEnergyCurrent(             # <<<<<<<<<<<<<<
  *                                 syst, self.offwhere, relPathList=relPathList,
  *                                 check_hermiticity=check_hermiticity, sum=True)
  */
@@ -6384,46 +6368,46 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17LeadEnergyCurrent___ini
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
   PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_cur_scope->__pyx_v_syst);
-  __Pyx_GIVEREF(__pyx_t_1);
-  PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_t_1);
-  __pyx_t_1 = 0;
+  __Pyx_GIVEREF(__pyx_t_6);
+  PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_t_6);
+  __pyx_t_6 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":247
  *         #initialize 'offSite' term of Energy Current
- *         self.offSite = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite = generalOperator.offEnergyCurrent(
  *                                 syst, self.offwhere, relPathList=relPathList,             # <<<<<<<<<<<<<<
  *                                 check_hermiticity=check_hermiticity, sum=True)
  * 
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 247, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_6 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 247, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
   __pyx_t_3 = __pyx_memoryview_fromslice(__pyx_v_relPathList, 2, (PyObject *(*)(char *)) __pyx_memview_get_nn_gint, (int (*)(char *, PyObject *)) __pyx_memview_set_nn_gint, 0);; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 247, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_relPathList, __pyx_t_3) < 0) __PYX_ERR(0, 247, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_6, __pyx_n_s_relPathList, __pyx_t_3) < 0) __PYX_ERR(0, 247, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":248
- *         self.offSite = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite = generalOperator.offEnergyCurrent(
  *                                 syst, self.offwhere, relPathList=relPathList,
  *                                 check_hermiticity=check_hermiticity, sum=True)             # <<<<<<<<<<<<<<
  * 
  *         #initialize 'onSite' term of Energy Current
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 247, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_sum, Py_True) < 0) __PYX_ERR(0, 247, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_6, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 247, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_6, __pyx_n_s_sum, Py_True) < 0) __PYX_ERR(0, 247, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":246
  * 
  *         #initialize 'offSite' term of Energy Current
- *         self.offSite = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(             # <<<<<<<<<<<<<<
+ *         self.offSite = generalOperator.offEnergyCurrent(             # <<<<<<<<<<<<<<
  *                                 syst, self.offwhere, relPathList=relPathList,
  *                                 check_hermiticity=check_hermiticity, sum=True)
  */
-  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_t_2, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 246, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_2, __pyx_t_6); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 246, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_offSite, __pyx_t_3) < 0) __PYX_ERR(0, 246, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
@@ -6442,39 +6426,36 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17LeadEnergyCurrent___ini
   /* "HeatCurrentMethodsForGenOp.pyx":257
  *             assert(type(a) == int)
  *             return syst.hamiltonian(a, a, *args, params=params)
- *         self.onSite = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)             # <<<<<<<<<<<<<<
+ *         self.onSite = generalOperator.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)             # <<<<<<<<<<<<<<
  * 
  *     def get_onwhere(self):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 257, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 257, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_Current); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 257, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_Current); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 257, __pyx_L1_error)
+  __pyx_t_3 = PyTuple_New(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 257, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_cur_scope->__pyx_v_syst);
+  PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_cur_scope->__pyx_v_syst);
   __pyx_t_2 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 257, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_onsite, __pyx_v_onsiteHamil) < 0) __PYX_ERR(0, 257, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_onwhere); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 257, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_where, __pyx_t_6) < 0) __PYX_ERR(0, 257, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_onwhere); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 257, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_where, __pyx_t_1) < 0) __PYX_ERR(0, 257, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 257, __pyx_L1_error)
   if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_sum, Py_True) < 0) __PYX_ERR(0, 257, __pyx_L1_error)
-  __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 257, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_onSite, __pyx_t_6) < 0) __PYX_ERR(0, 257, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 257, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_onSite, __pyx_t_1) < 0) __PYX_ERR(0, 257, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":220
  *     """
@@ -6508,7 +6489,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17LeadEnergyCurrent___ini
 }
 
 /* "HeatCurrentMethodsForGenOp.pyx":259
- *         self.onSite = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
+ *         self.onSite = generalOperator.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
  * 
  *     def get_onwhere(self):             # <<<<<<<<<<<<<<
  *         return self.onwhere
@@ -6550,7 +6531,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_17LeadEnergyCurrent_2get_
   goto __pyx_L0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":259
- *         self.onSite = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
+ *         self.onSite = generalOperator.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
  * 
  *     def get_onwhere(self):             # <<<<<<<<<<<<<<
  *         return self.onwhere
@@ -7090,7 +7071,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  *                 a = syst.id_by_site[a]
  *             assert(type(a) == int)             # <<<<<<<<<<<<<<
  *             return syst.hamiltonian(a, a, *args, params=params)
- *         self.onSite_i = AdelsIdea.generalOperatorPathsbefore.Current(syst,
+ *         self.onSite_i = generalOperator.Current(syst,
  */
   #ifndef CYTHON_WITHOUT_ASSERTIONS
   if (unlikely(!Py_OptimizeFlag)) {
@@ -7108,7 +7089,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  *                 a = syst.id_by_site[a]
  *             assert(type(a) == int)
  *             return syst.hamiltonian(a, a, *args, params=params)             # <<<<<<<<<<<<<<
- *         self.onSite_i = AdelsIdea.generalOperatorPathsbefore.Current(syst,
+ *         self.onSite_i = generalOperator.Current(syst,
  *                                 onsite=onsiteHamil, where=where,
  */
   __Pyx_XDECREF(__pyx_r);
@@ -7236,7 +7217,7 @@ static PyObject *__pyx_gb_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  *                                                     for hop in sublist]
  *                                                     for sublist in offwhere_i)             # <<<<<<<<<<<<<<
  *         # initialize 'offSite' term of Energy Current
- *         self.offSite_i = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_i = generalOperator.offEnergyCurrent(
  */
   if (unlikely(!__pyx_cur_scope->__pyx_outer_scope->__pyx_v_offwhere_i)) { __Pyx_RaiseClosureNameError("offwhere_i"); __PYX_ERR(0, 365, __pyx_L1_error) }
   if (likely(PyList_CheckExact(__pyx_cur_scope->__pyx_outer_scope->__pyx_v_offwhere_i)) || PyTuple_CheckExact(__pyx_cur_scope->__pyx_outer_scope->__pyx_v_offwhere_i)) {
@@ -7397,7 +7378,7 @@ static PyObject *__pyx_gb_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  *                                                     for hop in sublist]
  *                                                     for sublist in offwhere_i)             # <<<<<<<<<<<<<<
  *         # initialize 'offSite' term of Energy Current
- *         self.offSite_i = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_i = generalOperator.offEnergyCurrent(
  */
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -7508,7 +7489,7 @@ static PyObject *__pyx_gb_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  *         offwhere_j_unfnlzd = list([(syst.sites[hop[0]],syst.sites[hop[1]])
  *                                                     for hop in sublist]
  *                                                     for sublist in offwhere_j)             # <<<<<<<<<<<<<<
- *         self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_j = generalOperator.offEnergyCurrent(
  *                             syst, offwhere_j_unfnlzd, relPathList=self.relPathList_j,
  */
   if (unlikely(!__pyx_cur_scope->__pyx_outer_scope->__pyx_v_offwhere_j)) { __Pyx_RaiseClosureNameError("offwhere_j"); __PYX_ERR(0, 391, __pyx_L1_error) }
@@ -7571,7 +7552,7 @@ static PyObject *__pyx_gb_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  *         offwhere_j_unfnlzd = list([(syst.sites[hop[0]],syst.sites[hop[1]])
  *                                                     for hop in sublist]             # <<<<<<<<<<<<<<
  *                                                     for sublist in offwhere_j)
- *         self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_j = generalOperator.offEnergyCurrent(
  */
     if (likely(PyList_CheckExact(__pyx_cur_scope->__pyx_v_sublist)) || PyTuple_CheckExact(__pyx_cur_scope->__pyx_v_sublist)) {
       __pyx_t_5 = __pyx_cur_scope->__pyx_v_sublist; __Pyx_INCREF(__pyx_t_5); __pyx_t_6 = 0;
@@ -7658,7 +7639,7 @@ static PyObject *__pyx_gb_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  *         offwhere_j_unfnlzd = list([(syst.sites[hop[0]],syst.sites[hop[1]])
  *                                                     for hop in sublist]             # <<<<<<<<<<<<<<
  *                                                     for sublist in offwhere_j)
- *         self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_j = generalOperator.offEnergyCurrent(
  */
     }
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
@@ -7669,7 +7650,7 @@ static PyObject *__pyx_gb_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  *         offwhere_j_unfnlzd = list([(syst.sites[hop[0]],syst.sites[hop[1]])
  *                                                     for hop in sublist]
  *                                                     for sublist in offwhere_j)             # <<<<<<<<<<<<<<
- *         self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_j = generalOperator.offEnergyCurrent(
  *                             syst, offwhere_j_unfnlzd, relPathList=self.relPathList_j,
  */
   }
@@ -7713,7 +7694,7 @@ static PyObject *__pyx_gb_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__i
  * 
  *         where_unfinalized = list((syst.sites[hop[0]],syst.sites[hop[1]]) for hop in where_norm_swapped)             # <<<<<<<<<<<<<<
  *         #initialize 'onSite' term of Energy Current
- *         self.onSite_j = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)
+ *         self.onSite_j = generalOperator.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)
  */
 
 static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__init___8genexpr(PyObject *__pyx_self) {
@@ -8086,34 +8067,31 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
   /* "HeatCurrentMethodsForGenOp.pyx":367
  *                                                     for sublist in offwhere_i)
  *         # initialize 'offSite' term of Energy Current
- *         self.offSite_i = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(             # <<<<<<<<<<<<<<
+ *         self.offSite_i = generalOperator.offEnergyCurrent(             # <<<<<<<<<<<<<<
  *                             syst, offwhere_i_unfnlzd, relPathList=self.relPathList_i,
  *                             check_hermiticity=check_hermiticity, sum=sum)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 367, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 367, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 367, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_offEnergyCurrent); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 367, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_offEnergyCurrent); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 367, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":368
  *         # initialize 'offSite' term of Energy Current
- *         self.offSite_i = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_i = generalOperator.offEnergyCurrent(
  *                             syst, offwhere_i_unfnlzd, relPathList=self.relPathList_i,             # <<<<<<<<<<<<<<
  *                             check_hermiticity=check_hermiticity, sum=sum)
  * 
  */
-  __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 367, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 367, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_cur_scope->__pyx_v_syst);
+  PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_cur_scope->__pyx_v_syst);
   __Pyx_INCREF(__pyx_v_offwhere_i_unfnlzd);
   __Pyx_GIVEREF(__pyx_v_offwhere_i_unfnlzd);
-  PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_offwhere_i_unfnlzd);
+  PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_v_offwhere_i_unfnlzd);
   __pyx_t_2 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 368, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_relPathList_i); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 368, __pyx_L1_error)
@@ -8122,7 +8100,7 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":369
- *         self.offSite_i = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_i = generalOperator.offEnergyCurrent(
  *                             syst, offwhere_i_unfnlzd, relPathList=self.relPathList_i,
  *                             check_hermiticity=check_hermiticity, sum=sum)             # <<<<<<<<<<<<<<
  * 
@@ -8134,14 +8112,14 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
   /* "HeatCurrentMethodsForGenOp.pyx":367
  *                                                     for sublist in offwhere_i)
  *         # initialize 'offSite' term of Energy Current
- *         self.offSite_i = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(             # <<<<<<<<<<<<<<
+ *         self.offSite_i = generalOperator.offEnergyCurrent(             # <<<<<<<<<<<<<<
  *                             syst, offwhere_i_unfnlzd, relPathList=self.relPathList_i,
  *                             check_hermiticity=check_hermiticity, sum=sum)
  */
-  __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 367, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 367, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_offSite_i, __pyx_t_5) < 0) __PYX_ERR(0, 367, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
@@ -8161,60 +8139,57 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
   /* "HeatCurrentMethodsForGenOp.pyx":378
  *             assert(type(a) == int)
  *             return syst.hamiltonian(a, a, *args, params=params)
- *         self.onSite_i = AdelsIdea.generalOperatorPathsbefore.Current(syst,             # <<<<<<<<<<<<<<
+ *         self.onSite_i = generalOperator.Current(syst,             # <<<<<<<<<<<<<<
  *                                 onsite=onsiteHamil, where=where,
  *                                 check_hermiticity=check_hermiticity, sum=sum)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 378, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 378, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 378, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_Current); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 378, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_Current); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 378, __pyx_L1_error)
+  __pyx_t_5 = PyTuple_New(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 378, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 378, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_cur_scope->__pyx_v_syst);
+  PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_cur_scope->__pyx_v_syst);
 
   /* "HeatCurrentMethodsForGenOp.pyx":379
  *             return syst.hamiltonian(a, a, *args, params=params)
- *         self.onSite_i = AdelsIdea.generalOperatorPathsbefore.Current(syst,
+ *         self.onSite_i = generalOperator.Current(syst,
  *                                 onsite=onsiteHamil, where=where,             # <<<<<<<<<<<<<<
  *                                 check_hermiticity=check_hermiticity, sum=sum)
  *         # the same for i and j in where swapped (to ensure I_E^ij == -I_E^ji,
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 379, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_onsite, __pyx_v_onsiteHamil) < 0) __PYX_ERR(0, 379, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_where, __pyx_v_where) < 0) __PYX_ERR(0, 379, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 379, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_onsite, __pyx_v_onsiteHamil) < 0) __PYX_ERR(0, 379, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_where, __pyx_v_where) < 0) __PYX_ERR(0, 379, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":380
- *         self.onSite_i = AdelsIdea.generalOperatorPathsbefore.Current(syst,
+ *         self.onSite_i = generalOperator.Current(syst,
  *                                 onsite=onsiteHamil, where=where,
  *                                 check_hermiticity=check_hermiticity, sum=sum)             # <<<<<<<<<<<<<<
  *         # the same for i and j in where swapped (to ensure I_E^ij == -I_E^ji,
  *         # in case of time-independent hopping ij)
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 379, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_sum, __pyx_v_sum) < 0) __PYX_ERR(0, 379, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 379, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_sum, __pyx_v_sum) < 0) __PYX_ERR(0, 379, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":378
  *             assert(type(a) == int)
  *             return syst.hamiltonian(a, a, *args, params=params)
- *         self.onSite_i = AdelsIdea.generalOperatorPathsbefore.Current(syst,             # <<<<<<<<<<<<<<
+ *         self.onSite_i = generalOperator.Current(syst,             # <<<<<<<<<<<<<<
  *                                 onsite=onsiteHamil, where=where,
  *                                 check_hermiticity=check_hermiticity, sum=sum)
  */
-  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_2, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 378, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_5, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 378, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_onSite_i, __pyx_t_3) < 0) __PYX_ERR(0, 378, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_onSite_i, __pyx_t_1) < 0) __PYX_ERR(0, 378, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":383
  *         # the same for i and j in where swapped (to ensure I_E^ij == -I_E^ji,
@@ -8223,38 +8198,38 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
  *         # extended where-lists creation and bookkeeping auxiliary lists
  *         offwhere_j, self.relPathList_j = \
  */
-  __pyx_t_3 = PyList_New(0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 383, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 383, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
   if (likely(PyList_CheckExact(__pyx_v_where_normalized)) || PyTuple_CheckExact(__pyx_v_where_normalized)) {
-    __pyx_t_1 = __pyx_v_where_normalized; __Pyx_INCREF(__pyx_t_1); __pyx_t_7 = 0;
+    __pyx_t_3 = __pyx_v_where_normalized; __Pyx_INCREF(__pyx_t_3); __pyx_t_7 = 0;
     __pyx_t_8 = NULL;
   } else {
-    __pyx_t_7 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_where_normalized); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 383, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_8 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 383, __pyx_L1_error)
+    __pyx_t_7 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_v_where_normalized); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 383, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __pyx_t_8 = Py_TYPE(__pyx_t_3)->tp_iternext; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 383, __pyx_L1_error)
   }
   for (;;) {
     if (likely(!__pyx_t_8)) {
-      if (likely(PyList_CheckExact(__pyx_t_1))) {
-        if (__pyx_t_7 >= PyList_GET_SIZE(__pyx_t_1)) break;
+      if (likely(PyList_CheckExact(__pyx_t_3))) {
+        if (__pyx_t_7 >= PyList_GET_SIZE(__pyx_t_3)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_7); __Pyx_INCREF(__pyx_t_2); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 383, __pyx_L1_error)
+        __pyx_t_5 = PyList_GET_ITEM(__pyx_t_3, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 383, __pyx_L1_error)
         #else
-        __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 383, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_2);
+        __pyx_t_5 = PySequence_ITEM(__pyx_t_3, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 383, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_5);
         #endif
       } else {
-        if (__pyx_t_7 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        if (__pyx_t_7 >= PyTuple_GET_SIZE(__pyx_t_3)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_7); __Pyx_INCREF(__pyx_t_2); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 383, __pyx_L1_error)
+        __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_3, __pyx_t_7); __Pyx_INCREF(__pyx_t_5); __pyx_t_7++; if (unlikely(0 < 0)) __PYX_ERR(0, 383, __pyx_L1_error)
         #else
-        __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 383, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_2);
+        __pyx_t_5 = PySequence_ITEM(__pyx_t_3, __pyx_t_7); __pyx_t_7++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 383, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_5);
         #endif
       }
     } else {
-      __pyx_t_2 = __pyx_t_8(__pyx_t_1);
-      if (unlikely(!__pyx_t_2)) {
+      __pyx_t_5 = __pyx_t_8(__pyx_t_3);
+      if (unlikely(!__pyx_t_5)) {
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
@@ -8262,29 +8237,29 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
         }
         break;
       }
-      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_5);
     }
-    __Pyx_XDECREF_SET(__pyx_v_hop, __pyx_t_2);
-    __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_GetItemInt(__pyx_v_hop, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 383, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_hop, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 383, __pyx_L1_error)
+    __Pyx_XDECREF_SET(__pyx_v_hop, __pyx_t_5);
+    __pyx_t_5 = 0;
+    __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_hop, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 383, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_2 = __Pyx_GetItemInt(__pyx_v_hop, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 383, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_9 = PyTuple_New(2); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 383, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __Pyx_GIVEREF(__pyx_t_2);
-    PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_2);
     __Pyx_GIVEREF(__pyx_t_5);
-    PyTuple_SET_ITEM(__pyx_t_9, 1, __pyx_t_5);
-    __pyx_t_2 = 0;
+    PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_2);
+    PyTuple_SET_ITEM(__pyx_t_9, 1, __pyx_t_2);
     __pyx_t_5 = 0;
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_3, (PyObject*)__pyx_t_9))) __PYX_ERR(0, 383, __pyx_L1_error)
+    __pyx_t_2 = 0;
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_9))) __PYX_ERR(0, 383, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   }
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __Pyx_GIVEREF(__pyx_t_3);
-  __pyx_cur_scope->__pyx_v_where_norm_swapped = ((PyObject*)__pyx_t_3);
-  __pyx_t_3 = 0;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __Pyx_GIVEREF(__pyx_t_1);
+  __pyx_cur_scope->__pyx_v_where_norm_swapped = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":386
  *         # extended where-lists creation and bookkeeping auxiliary lists
@@ -8293,55 +8268,55 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
  * 
  *         #initialize 'offSite' term of Energy Current
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_create_where_and_path_lists_for); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 386, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_create_where_and_path_lists_for); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 386, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_9 = NULL;
   __pyx_t_4 = 0;
-  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_1))) {
-    __pyx_t_9 = PyMethod_GET_SELF(__pyx_t_1);
+  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
+    __pyx_t_9 = PyMethod_GET_SELF(__pyx_t_3);
     if (likely(__pyx_t_9)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_1);
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_9);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_1, function);
+      __Pyx_DECREF_SET(__pyx_t_3, function);
       __pyx_t_4 = 1;
     }
   }
   #if CYTHON_FAST_PYCALL
-  if (PyFunction_Check(__pyx_t_1)) {
+  if (PyFunction_Check(__pyx_t_3)) {
     PyObject *__pyx_temp[3] = {__pyx_t_9, __pyx_cur_scope->__pyx_v_syst, __pyx_cur_scope->__pyx_v_where_norm_swapped};
-    __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_4, 2+__pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 386, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_4, 2+__pyx_t_4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 386, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_GOTREF(__pyx_t_1);
   } else
   #endif
   #if CYTHON_FAST_PYCCALL
-  if (__Pyx_PyFastCFunction_Check(__pyx_t_1)) {
+  if (__Pyx_PyFastCFunction_Check(__pyx_t_3)) {
     PyObject *__pyx_temp[3] = {__pyx_t_9, __pyx_cur_scope->__pyx_v_syst, __pyx_cur_scope->__pyx_v_where_norm_swapped};
-    __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_4, 2+__pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 386, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_4, 2+__pyx_t_4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 386, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_GOTREF(__pyx_t_1);
   } else
   #endif
   {
-    __pyx_t_5 = PyTuple_New(2+__pyx_t_4); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 386, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_2 = PyTuple_New(2+__pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 386, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
     if (__pyx_t_9) {
-      __Pyx_GIVEREF(__pyx_t_9); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_9); __pyx_t_9 = NULL;
+      __Pyx_GIVEREF(__pyx_t_9); PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_9); __pyx_t_9 = NULL;
     }
     __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
     __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-    PyTuple_SET_ITEM(__pyx_t_5, 0+__pyx_t_4, __pyx_cur_scope->__pyx_v_syst);
+    PyTuple_SET_ITEM(__pyx_t_2, 0+__pyx_t_4, __pyx_cur_scope->__pyx_v_syst);
     __Pyx_INCREF(__pyx_cur_scope->__pyx_v_where_norm_swapped);
     __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_where_norm_swapped);
-    PyTuple_SET_ITEM(__pyx_t_5, 1+__pyx_t_4, __pyx_cur_scope->__pyx_v_where_norm_swapped);
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_5, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 386, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    PyTuple_SET_ITEM(__pyx_t_2, 1+__pyx_t_4, __pyx_cur_scope->__pyx_v_where_norm_swapped);
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 386, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   }
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if ((likely(PyTuple_CheckExact(__pyx_t_3))) || (PyList_CheckExact(__pyx_t_3))) {
-    PyObject* sequence = __pyx_t_3;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  if ((likely(PyTuple_CheckExact(__pyx_t_1))) || (PyList_CheckExact(__pyx_t_1))) {
+    PyObject* sequence = __pyx_t_1;
     Py_ssize_t size = __Pyx_PySequence_SIZE(sequence);
     if (unlikely(size != 2)) {
       if (size > 2) __Pyx_RaiseTooManyValuesError(2);
@@ -8350,31 +8325,31 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
     }
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
     if (likely(PyTuple_CheckExact(sequence))) {
-      __pyx_t_1 = PyTuple_GET_ITEM(sequence, 0); 
-      __pyx_t_5 = PyTuple_GET_ITEM(sequence, 1); 
+      __pyx_t_3 = PyTuple_GET_ITEM(sequence, 0); 
+      __pyx_t_2 = PyTuple_GET_ITEM(sequence, 1); 
     } else {
-      __pyx_t_1 = PyList_GET_ITEM(sequence, 0); 
-      __pyx_t_5 = PyList_GET_ITEM(sequence, 1); 
+      __pyx_t_3 = PyList_GET_ITEM(sequence, 0); 
+      __pyx_t_2 = PyList_GET_ITEM(sequence, 1); 
     }
-    __Pyx_INCREF(__pyx_t_1);
-    __Pyx_INCREF(__pyx_t_5);
+    __Pyx_INCREF(__pyx_t_3);
+    __Pyx_INCREF(__pyx_t_2);
     #else
-    __pyx_t_1 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 385, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_5 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 385, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_3 = PySequence_ITEM(sequence, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 385, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __pyx_t_2 = PySequence_ITEM(sequence, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 385, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
     #endif
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   } else {
     Py_ssize_t index = -1;
-    __pyx_t_9 = PyObject_GetIter(__pyx_t_3); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 385, __pyx_L1_error)
+    __pyx_t_9 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 385, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_t_6 = Py_TYPE(__pyx_t_9)->tp_iternext;
-    index = 0; __pyx_t_1 = __pyx_t_6(__pyx_t_9); if (unlikely(!__pyx_t_1)) goto __pyx_L7_unpacking_failed;
-    __Pyx_GOTREF(__pyx_t_1);
-    index = 1; __pyx_t_5 = __pyx_t_6(__pyx_t_9); if (unlikely(!__pyx_t_5)) goto __pyx_L7_unpacking_failed;
-    __Pyx_GOTREF(__pyx_t_5);
+    index = 0; __pyx_t_3 = __pyx_t_6(__pyx_t_9); if (unlikely(!__pyx_t_3)) goto __pyx_L7_unpacking_failed;
+    __Pyx_GOTREF(__pyx_t_3);
+    index = 1; __pyx_t_2 = __pyx_t_6(__pyx_t_9); if (unlikely(!__pyx_t_2)) goto __pyx_L7_unpacking_failed;
+    __Pyx_GOTREF(__pyx_t_2);
     if (__Pyx_IternextUnpackEndCheck(__pyx_t_6(__pyx_t_9), 2) < 0) __PYX_ERR(0, 385, __pyx_L1_error)
     __pyx_t_6 = NULL;
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -8394,11 +8369,11 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
  *             _create_where_and_path_lists_for_local_ECurr(syst, where_norm_swapped)
  * 
  */
-  __Pyx_GIVEREF(__pyx_t_1);
-  __pyx_cur_scope->__pyx_v_offwhere_j = __pyx_t_1;
-  __pyx_t_1 = 0;
-  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_relPathList_j, __pyx_t_5) < 0) __PYX_ERR(0, 385, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __Pyx_GIVEREF(__pyx_t_3);
+  __pyx_cur_scope->__pyx_v_offwhere_j = __pyx_t_3;
+  __pyx_t_3 = 0;
+  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_relPathList_j, __pyx_t_2) < 0) __PYX_ERR(0, 385, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":389
  * 
@@ -8407,74 +8382,71 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
  *                                                     for hop in sublist]
  *                                                     for sublist in offwhere_j)
  */
-  __pyx_t_3 = __pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__init___5genexpr(((PyObject*)__pyx_cur_scope)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 389, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_5 = __Pyx_Generator_Next(__pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 389, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_v_offwhere_j_unfnlzd = ((PyObject*)__pyx_t_5);
-  __pyx_t_5 = 0;
+  __pyx_t_1 = __pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__init___5genexpr(((PyObject*)__pyx_cur_scope)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 389, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_Generator_Next(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 389, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_offwhere_j_unfnlzd = ((PyObject*)__pyx_t_2);
+  __pyx_t_2 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":392
  *                                                     for hop in sublist]
  *                                                     for sublist in offwhere_j)
- *         self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(             # <<<<<<<<<<<<<<
+ *         self.offSite_j = generalOperator.offEnergyCurrent(             # <<<<<<<<<<<<<<
  *                             syst, offwhere_j_unfnlzd, relPathList=self.relPathList_j,
  *                             check_hermiticity=check_hermiticity, sum=sum)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 392, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 392, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_offEnergyCurrent); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 392, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 392, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_offEnergyCurrent); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 392, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":393
  *                                                     for sublist in offwhere_j)
- *         self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_j = generalOperator.offEnergyCurrent(
  *                             syst, offwhere_j_unfnlzd, relPathList=self.relPathList_j,             # <<<<<<<<<<<<<<
  *                             check_hermiticity=check_hermiticity, sum=sum)
  * 
  */
-  __pyx_t_3 = PyTuple_New(2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 392, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 392, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_cur_scope->__pyx_v_syst);
+  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_cur_scope->__pyx_v_syst);
   __Pyx_INCREF(__pyx_v_offwhere_j_unfnlzd);
   __Pyx_GIVEREF(__pyx_v_offwhere_j_unfnlzd);
-  PyTuple_SET_ITEM(__pyx_t_3, 1, __pyx_v_offwhere_j_unfnlzd);
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 393, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_v_offwhere_j_unfnlzd);
+  __pyx_t_3 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 393, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_v_self, __pyx_n_s_relPathList_j); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 393, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_relPathList, __pyx_t_9) < 0) __PYX_ERR(0, 393, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_relPathList, __pyx_t_9) < 0) __PYX_ERR(0, 393, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":394
- *         self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+ *         self.offSite_j = generalOperator.offEnergyCurrent(
  *                             syst, offwhere_j_unfnlzd, relPathList=self.relPathList_j,
  *                             check_hermiticity=check_hermiticity, sum=sum)             # <<<<<<<<<<<<<<
  * 
  *         where_unfinalized = list((syst.sites[hop[0]],syst.sites[hop[1]]) for hop in where_norm_swapped)
  */
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 393, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_sum, __pyx_v_sum) < 0) __PYX_ERR(0, 393, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 393, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_sum, __pyx_v_sum) < 0) __PYX_ERR(0, 393, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":392
  *                                                     for hop in sublist]
  *                                                     for sublist in offwhere_j)
- *         self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(             # <<<<<<<<<<<<<<
+ *         self.offSite_j = generalOperator.offEnergyCurrent(             # <<<<<<<<<<<<<<
  *                             syst, offwhere_j_unfnlzd, relPathList=self.relPathList_j,
  *                             check_hermiticity=check_hermiticity, sum=sum)
  */
-  __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_3, __pyx_t_1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 392, __pyx_L1_error)
+  __pyx_t_9 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 392, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_offSite_j, __pyx_t_9) < 0) __PYX_ERR(0, 392, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
@@ -8483,49 +8455,46 @@ static PyObject *__pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent___in
  * 
  *         where_unfinalized = list((syst.sites[hop[0]],syst.sites[hop[1]]) for hop in where_norm_swapped)             # <<<<<<<<<<<<<<
  *         #initialize 'onSite' term of Energy Current
- *         self.onSite_j = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)
+ *         self.onSite_j = generalOperator.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)
  */
   __pyx_t_9 = __pyx_pf_26HeatCurrentMethodsForGenOp_18LocalEnergyCurrent_8__init___8genexpr(((PyObject*)__pyx_cur_scope)); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 396, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __pyx_t_1 = __Pyx_Generator_Next(__pyx_t_9); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 396, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = __Pyx_Generator_Next(__pyx_t_9); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 396, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-  __pyx_v_where_unfinalized = ((PyObject*)__pyx_t_1);
-  __pyx_t_1 = 0;
+  __pyx_v_where_unfinalized = ((PyObject*)__pyx_t_3);
+  __pyx_t_3 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":398
  *         where_unfinalized = list((syst.sites[hop[0]],syst.sites[hop[1]]) for hop in where_norm_swapped)
  *         #initialize 'onSite' term of Energy Current
- *         self.onSite_j = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)             # <<<<<<<<<<<<<<
+ *         self.onSite_j = generalOperator.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_AdelsIdea); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 398, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_generalOperatorPathsbefore); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 398, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_generalOperator); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 398, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_Current); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 398, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_9);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_9, __pyx_n_s_Current); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 398, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-  __pyx_t_9 = PyTuple_New(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 398, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_9);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = PyTuple_New(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 398, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_syst);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_syst);
-  PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_cur_scope->__pyx_v_syst);
-  __pyx_t_3 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 398, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_onsite, __pyx_v_onsiteHamil) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_where, __pyx_v_where_unfinalized) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
-  if (PyDict_SetItem(__pyx_t_3, __pyx_n_s_sum, __pyx_v_sum) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
-  __pyx_t_5 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_9, __pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 398, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_cur_scope->__pyx_v_syst);
+  __pyx_t_2 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 398, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_onsite, __pyx_v_onsiteHamil) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_where, __pyx_v_where_unfinalized) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_check_hermiticity, __pyx_v_check_hermiticity) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_sum, __pyx_v_sum) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_9, __pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 398, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_onSite_j, __pyx_t_5) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if (__Pyx_PyObject_SetAttrStr(__pyx_v_self, __pyx_n_s_onSite_j, __pyx_t_1) < 0) __PYX_ERR(0, 398, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":353
  * 
@@ -26833,8 +26802,6 @@ static struct PyModuleDef __pyx_moduledef = {
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_ASCII, __pyx_k_ASCII, sizeof(__pyx_k_ASCII), 0, 0, 1, 1},
-  {&__pyx_n_s_AdelsIdea, __pyx_k_AdelsIdea, sizeof(__pyx_k_AdelsIdea), 0, 0, 1, 1},
-  {&__pyx_n_s_AdelsIdea_generalOperatorPathsbe, __pyx_k_AdelsIdea_generalOperatorPathsbe, sizeof(__pyx_k_AdelsIdea_generalOperatorPathsbe), 0, 0, 1, 1},
   {&__pyx_kp_s_An_operator_for_calculating_the, __pyx_k_An_operator_for_calculating_the, sizeof(__pyx_k_An_operator_for_calculating_the), 0, 0, 1, 0},
   {&__pyx_kp_s_An_operator_for_calculating_the_2, __pyx_k_An_operator_for_calculating_the_2, sizeof(__pyx_k_An_operator_for_calculating_the_2), 0, 0, 1, 0},
   {&__pyx_n_s_ArbitHop, __pyx_k_ArbitHop, sizeof(__pyx_k_ArbitHop), 0, 0, 1, 1},
@@ -26927,7 +26894,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_u_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 1, 0, 1},
   {&__pyx_n_s_fsyst, __pyx_k_fsyst, sizeof(__pyx_k_fsyst), 0, 0, 1, 1},
   {&__pyx_n_s_fullwhere, __pyx_k_fullwhere, sizeof(__pyx_k_fullwhere), 0, 0, 1, 1},
-  {&__pyx_n_s_generalOperatorPathsbefore, __pyx_k_generalOperatorPathsbefore, sizeof(__pyx_k_generalOperatorPathsbefore), 0, 0, 1, 1},
+  {&__pyx_n_s_generalOperator, __pyx_k_generalOperator, sizeof(__pyx_k_generalOperator), 0, 0, 1, 1},
   {&__pyx_n_s_genexpr, __pyx_k_genexpr, sizeof(__pyx_k_genexpr), 0, 0, 1, 1},
   {&__pyx_n_s_get_offwhere, __pyx_k_get_offwhere, sizeof(__pyx_k_get_offwhere), 0, 0, 1, 1},
   {&__pyx_n_s_get_onwhere, __pyx_k_get_onwhere, sizeof(__pyx_k_get_onwhere), 0, 0, 1, 1},
@@ -27457,7 +27424,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __pyx_codeobj__41 = (PyObject*)__Pyx_PyCode_New(4, 1, 17, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__40, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_HeatCurrentMethodsForGenOp_pyx, __pyx_n_s_init, 220, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__41)) __PYX_ERR(0, 220, __pyx_L1_error)
 
   /* "HeatCurrentMethodsForGenOp.pyx":259
- *         self.onSite = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
+ *         self.onSite = generalOperator.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
  * 
  *     def get_onwhere(self):             # <<<<<<<<<<<<<<
  *         return self.onwhere
@@ -28102,7 +28069,7 @@ if (!__Pyx_RefNanny) {
  * #from kwant.system import InfiniteSystem
  * ###FOR _check_ham
  * from kwant._common import UserCodeError, get_parameters             # <<<<<<<<<<<<<<
- * import AdelsIdea.generalOperatorPathsbefore
+ * import generalOperator
  * 
  */
   __pyx_t_2 = PyList_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 26, __pyx_L1_error)
@@ -28129,13 +28096,13 @@ if (!__Pyx_RefNanny) {
   /* "HeatCurrentMethodsForGenOp.pyx":27
  * ###FOR _check_ham
  * from kwant._common import UserCodeError, get_parameters
- * import AdelsIdea.generalOperatorPathsbefore             # <<<<<<<<<<<<<<
+ * import generalOperator             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_Import(__pyx_n_s_AdelsIdea_generalOperatorPathsbe, 0, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 27, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_Import(__pyx_n_s_generalOperator, 0, -1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 27, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_AdelsIdea, __pyx_t_1) < 0) __PYX_ERR(0, 27, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_generalOperator, __pyx_t_1) < 0) __PYX_ERR(0, 27, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":30
@@ -28373,7 +28340,7 @@ if (!__Pyx_RefNanny) {
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
 
   /* "HeatCurrentMethodsForGenOp.pyx":259
- *         self.onSite = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
+ *         self.onSite = generalOperator.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
  * 
  *     def get_onwhere(self):             # <<<<<<<<<<<<<<
  *         return self.onwhere
