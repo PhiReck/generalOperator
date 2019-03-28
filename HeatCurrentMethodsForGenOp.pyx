@@ -24,7 +24,7 @@ from kwant.graph.defs import gint_dtype
 #from kwant.system import InfiniteSystem
 ###FOR _check_ham
 from kwant._common import UserCodeError, get_parameters
-import AdelsIdea.generalOperatorPathsbefore
+import generalOperator
 
 
 import numpy as np
@@ -83,7 +83,7 @@ class heatCurrentWithIc(kwant.operator._LocalOperator):
         self.energyCurrent = LeadEnergyCurrent(syst, intracell_sites, intercell_sites, check_hermiticity=True)
 
         curr_where = self.energyCurrent.get_onwhere()
-        self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where, \
+        self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where, \
                  check_hermiticity=True, sum=True)
 
         # derivative of the Hamiltonian by finite difference
@@ -98,7 +98,7 @@ class heatCurrentWithIc(kwant.operator._LocalOperator):
         else:
             Hdot = tderiv_Hamil
         #Create instance of explicitely t-dep terms
-        self.tdepCoupling = AdelsIdea.generalOperatorPathsbefore.ArbitHop(syst, onsite=1, \
+        self.tdepCoupling = generalOperator.ArbitHop(syst, onsite=1, \
                             arbit_hop_func=Hdot, where=curr_where, \
                             check_hermiticity=False, sum=True)
 
@@ -148,7 +148,7 @@ class heatCurrentNoIc(kwant.operator._LocalOperator):
         self.energyCurrent = LeadEnergyCurrent(syst, intracell_sites, intercell_sites, check_hermiticity=True)
 
         curr_where = self.energyCurrent.get_onwhere()
-        self.particleCurrent = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=1, where=curr_where,
+        self.particleCurrent = generalOperator.Current(syst, onsite=1, where=curr_where,
                  check_hermiticity=True, sum=True)
 
 
@@ -243,7 +243,7 @@ class LeadEnergyCurrent(kwant.operator._LocalOperator):
         self.offwhere = list([(syst.sites[hop[0]],syst.sites[hop[1]]) for hop in list] for list in offwhere)
 
         #initialize 'offSite' term of Energy Current
-        self.offSite = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+        self.offSite = generalOperator.offEnergyCurrent(
                                 syst, self.offwhere, relPathList=relPathList,
                                 check_hermiticity=check_hermiticity, sum=True)
 
@@ -254,7 +254,7 @@ class LeadEnergyCurrent(kwant.operator._LocalOperator):
                 a = syst.id_by_site[a]
             assert(type(a) == int)
             return syst.hamiltonian(a, a, *args, params=params)
-        self.onSite = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
+        self.onSite = generalOperator.Current(syst, onsite=onsiteHamil, where=self.onwhere, check_hermiticity=check_hermiticity, sum=True)
 
     def get_onwhere(self):
         return self.onwhere
@@ -364,7 +364,7 @@ class LocalEnergyCurrent(kwant.operator._LocalOperator):
                                                     for hop in sublist]
                                                     for sublist in offwhere_i)
         # initialize 'offSite' term of Energy Current
-        self.offSite_i = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+        self.offSite_i = generalOperator.offEnergyCurrent(
                             syst, offwhere_i_unfnlzd, relPathList=self.relPathList_i,
                             check_hermiticity=check_hermiticity, sum=sum)
 
@@ -375,7 +375,7 @@ class LocalEnergyCurrent(kwant.operator._LocalOperator):
                 a = syst.id_by_site[a]
             assert(type(a) == int)
             return syst.hamiltonian(a, a, *args, params=params)
-        self.onSite_i = AdelsIdea.generalOperatorPathsbefore.Current(syst,
+        self.onSite_i = generalOperator.Current(syst,
                                 onsite=onsiteHamil, where=where,
                                 check_hermiticity=check_hermiticity, sum=sum)
         # the same for i and j in where swapped (to ensure I_E^ij == -I_E^ji,
@@ -389,13 +389,13 @@ class LocalEnergyCurrent(kwant.operator._LocalOperator):
         offwhere_j_unfnlzd = list([(syst.sites[hop[0]],syst.sites[hop[1]])
                                                     for hop in sublist]
                                                     for sublist in offwhere_j)
-        self.offSite_j = AdelsIdea.generalOperatorPathsbefore.offEnergyCurrent(
+        self.offSite_j = generalOperator.offEnergyCurrent(
                             syst, offwhere_j_unfnlzd, relPathList=self.relPathList_j,
                             check_hermiticity=check_hermiticity, sum=sum)
 
         where_unfinalized = list((syst.sites[hop[0]],syst.sites[hop[1]]) for hop in where_norm_swapped)
         #initialize 'onSite' term of Energy Current
-        self.onSite_j = AdelsIdea.generalOperatorPathsbefore.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)
+        self.onSite_j = generalOperator.Current(syst, onsite=onsiteHamil, where=where_unfinalized, check_hermiticity=check_hermiticity, sum=sum)
 
 
 
